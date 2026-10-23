@@ -1,5 +1,5 @@
 const USBMapping = (() => {
-  const STORAGE_KEY = 'usb-orchestra-mappings-v1';
+  const STORAGE_KEY = 'usb-orchestra-mappings-v2';
 
   // Ações que um comando pode controlar.
   const ACTIONS = {
@@ -67,8 +67,88 @@ const USBMapping = (() => {
     },
   };
 
-  let state = load() || JSON.parse(JSON.stringify(DEFAULT));
+  // Perfis predefinidos por tipo de controlador.
+  const PROFILES = {
+    generic: {
+      label: 'Genérico (com sticks)',
+      match: () => true,
+      role: 'lead',
+      bindings: [
+        { type: 'button', index: 0, action: 'note', param: 0 },
+        { type: 'button', index: 1, action: 'note', param: 2 },
+        { type: 'button', index: 2, action: 'note', param: 4 },
+        { type: 'button', index: 3, action: 'note', param: 6 },
+        { type: 'button', index: 12, action: 'note', param: 7 },
+        { type: 'button', index: 13, action: 'note', param: 1 },
+        { type: 'button', index: 14, action: 'note', param: 3 },
+        { type: 'button', index: 15, action: 'note', param: 5 },
+        { type: 'button', index: 4, action: 'octaveDown' },
+        { type: 'button', index: 5, action: 'octaveUp' },
+        { type: 'button', index: 6, action: 'sustain' },
+        { type: 'button', index: 7, action: 'note', param: 9 },
+        { type: 'button', index: 8, action: 'panic' },
+        { type: 'button', index: 9, action: 'arpToggle' },
+        { type: 'axis', index: 0, action: 'pitchBend' },
+        { type: 'axis', index: 1, action: 'cutoff' },
+        { type: 'axis', index: 2, action: 'resonance' },
+        { type: 'axis', index: 3, action: 'delayMix' },
+      ],
+    },
+    snes: {
+      label: 'SNES / Super Nintendo',
+      // IDs comuns de adaptadores SNES USB costumam conter "snes", "retro", "8bitdo", etc.
+      match: (id) => /snes|retro|8bitdo|nes|sfc|usb,2-axis 8-button|playstation.*classic|qanba/i.test(id),
+      role: 'lead',
+      // Gamepad API para SNES USB (mapping standard):
+      // botões 0-3 = X A B Y (face), 4-7 = L1 R1 L2? (varia), 8 = select, 9 = start,
+      // 12-15 = d-pad. Alguns adaptadores reportam d-pad como eixos 0-1.
+      bindings: [
+        // Face: A B X Y = acorde base (fundamental, 3ª, 4ª, 5ª)
+        { type: 'button', index: 0, action: 'note', param: 0 },
+        { type: 'button', index: 1, action: 'note', param: 2 },
+        { type: 'button', index: 2, action: 'note', param: 4 },
+        { type: 'button', index: 3, action: 'note', param: 6 },
+        // Ombros L/R = oitava e sustain
+        { type: 'button', index: 4, action: 'octaveDown' },
+        { type: 'button', index: 5, action: 'octaveUp' },
+        { type: 'button', index: 6, action: 'sustain' },
+        { type: 'button', index: 7, action: 'arpToggle' },
+        // Select = panic, Start = sequenciador
+        { type: 'button', index: 8, action: 'panic' },
+        { type: 'button', index: 9, action: 'playStop' },
+        // Eixos (se o adaptador reportar d-pad como eixos): X = pitch bend, Y = cutoff
+        { type: 'axis', index: 0, action: 'pitchBend' },
+        { type: 'axis', index: 1, action: 'cutoff' },
+      ],
+    },
+  };
+
+  function detectProfile(padId, buttonCount, axisCount) {
+    const id = (padId || '').toLowerCase();
+    // SNES: típico 10-12 botões e 0-2 eixos; ou ID conhecido
+    for (const key of Object.keys(PROFILES)) {
+      if (key === 'generic') continue;
+      const p = PROFILES[key];
+      if (p.match(id, buttonCount, axisCount)) return key;
+    }
+    // Heurística: poucos botões e sem eixos suficientes → tipo retro
+    if (buttonCount <= 12 && axisCount <= 2) return 'snes';
+    return 'generic';
+  }
+
+  function profileFor(padIndex, padId, buttonCount, axisCount) {
+    const cfg = state.pads[padIndex];
+    if (cfg && cfg.bindings && cfg.bindings.length) return cfg;
+    const key = detectProfile(padId, buttonCount, axisCount);
+    const profile = PROFILES[key];
+    state.pads[padIndex] = { role: profile.role, profile: key, bindings: JSON.parse(JSON.stringify(profile.bindings)) };
+    save();
+    return state.pads[padIndex];
+  }
+
   const listeners = { learn: [] };
+
+  let state = load() || JSON.parse(JSON.stringify(DEFAULT));
 
   function load() {
     try {
@@ -170,7 +250,7 @@ const USBMapping = (() => {
   }
 
   return {
-    ACTIONS, DEFAULT, getPadConfig, setBinding, clearBindings, resetToDefault,
+    ACTIONS, DEFAULT, PROFILES, detectProfile, profileFor, getPadConfig, setBinding, clearBindings, resetToDefault,
     save, load, onLearn, startLearn, stopLearn, isLearning, feedLearn,
     getState, setState, nextFreeDegree,
   };

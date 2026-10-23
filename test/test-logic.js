@@ -180,6 +180,24 @@ try { USBEngine.init(); } catch (e) { engineThrew = true; }
 // ensure lança porque window.AudioContext não existe em Node — aceitável no browser; verificamos apenas que o erro é o esperado
 if (engineThrew) console.log('  (nota: init sem AudioContext lança, como esperado fora do browser)');
 
+section('Perfis de controlador');
+assert(USBMapping.PROFILES.snes && USBMapping.PROFILES.generic, 'perfis SNES e genérico existem');
+assert(USBMapping.detectProfile('USB SNES Controller', 10, 2) === 'snes', 'ID com "snes" deteta perfil SNES');
+assert(USBMapping.detectProfile('8BitDo NES30', 10, 0) === 'snes', '8BitDo deteta perfil retro');
+assert(USBMapping.detectProfile('Sony DualShock 3 (STANDARD)', 17, 6) === 'generic', 'DualShock deteta perfil genérico');
+assert(USBMapping.detectProfile('Xbox 360 Controller', 16, 4) === 'generic', 'Xbox deteta perfil genérico');
+assert(USBMapping.detectProfile('Generic Retro Pad', 10, 1) === 'snes', 'heurística: poucos botões/eixos → SNES');
+const snesCfg = USBMapping.profileFor(5, 'USB SNES Controller', 10, 2);
+assert(snesCfg.profile === 'snes', 'profileFor cria config SNES para comando novo');
+const snesNotes = snesCfg.bindings.filter(b => b.action === 'note');
+assert(snesNotes.length >= 4, 'perfil SNES mapeia >=4 botões como notas');
+assert(snesCfg.bindings.some(b => b.action === 'sustain'), 'perfil SNES tem sustain (L)');
+assert(snesCfg.bindings.some(b => b.action === 'octaveUp'), 'perfil SNES tem oitava (R)');
+const genericCfg = USBMapping.profileFor(6, 'Sony DualShock 3 (STANDARD)', 17, 6);
+assert(genericCfg.profile === 'generic', 'profileFor cria config genérica para DualShock');
+assert(genericCfg.bindings.some(b => b.action === 'pitchBend'), 'perfil genérico tem pitch bend no stick');
+assert(genericCfg.bindings.every(b => b.index < 17), 'perfil genérico não excede 17 botões');
+
 section('Persistência de mapeamentos');
 USBMapping.setBinding(0, 'axis', 2, 'resonance');
 const reloaded = USBMapping.load();

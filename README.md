@@ -37,7 +37,7 @@ Liga comandos USB (DualShock 3, comandos Nintendo antigos, genéricos...) ao com
 
 ### Mapeamento predefinido — modo performance (controlador MIDI)
 
-O comando funciona como um **controlador MIDI**: cada botão é uma nota da escala, os sticks são expressão em tempo real.
+O comando funciona como um **controlador MIDI**: cada botão é uma nota da escala, os sticks são expressão em tempo real. A aplicação **deteta automaticamente o tipo de controlador** (SNES/retro vs. moderno com sticks) e aplica o perfil adequado.
 
 | Controlo | Ação (graus da escala menor natural em dó) |
 |---|---|
@@ -60,7 +60,20 @@ Como os graus estão em escala, **qualquer combinação de botões soa bem** —
 
 **Sem comando USB?** As teclas `A S D F G H J K L` do teclado tocam as notas da escala (dó menor), a partir do momento em que ativas o som.
 
-> Os índices de botões variam entre comandos e navegadores. Se um botão não fizer o esperado, usa o modo Aprender para o remapear — escolhe a ação “Nota (grau da escala)” e prime o botão; ele recebe automaticamente o próximo grau livre. Fica guardado no navegador.
+#### Comandos SNES / retro (sem sticks)
+
+Adaptadores SNES USB (e comandos retro em geral) recebem um perfil próprio, detetado automaticamente pelo ID do dispositivo ou pela heurística (poucos botões, sem sticks):
+
+| Controlo | Ação |
+|---|---|
+| A B X Y (face) | Notas — fundamental, 3ª, 4ª, 5ª |
+| L / R | Oitava − / + |
+| ZL / ZR (botões 6-7) | Sustain / Arpejo |
+| Select | Panic |
+| Start | Play / Stop do sequenciador |
+| D-pad (se for eixos) | Pitch bend / Cutoff |
+
+> Os índices de botões variam entre adaptadores e navegadores. Se um botão não fizer o esperado, usa o modo Aprender para o remapear — escolhe a ação “Nota (grau da escala)” e prime o botão; ele recebe automaticamente o próximo grau livre. Fica guardado no navegador.
 
 ## Publicação no GitHub Pages
 

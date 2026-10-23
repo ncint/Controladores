@@ -48,6 +48,9 @@ const USBGamepads = (() => {
       axisCount: gp.axes.length,
       mapping: gp.mapping,
     };
+    if (typeof USBMapping !== 'undefined' && USBMapping.profileFor) {
+      pads[gp.index].profile = USBMapping.profileFor(gp.index, gp.id, gp.buttons.length, gp.axes.length).profile;
+    }
     if (!known) emit('connect', pads[gp.index]);
   }
 

@@ -97,10 +97,11 @@
       const div = document.createElement('div');
       div.className = 'pad-card';
       div.id = 'pad-card-' + p.index;
+      const profileLabel = (p.profile && USBMapping.PROFILES[p.profile]) ? USBMapping.PROFILES[p.profile].label : null;
       div.innerHTML = `
         <div class="pad-title"><span class="pad-dot" id="pad-dot-${p.index}"></span>Comando ${p.index + 1}</div>
         <div class="pad-id">${p.id}</div>
-        <div class="pad-role">Função: ${cfg ? cfg.role : '—'}</div>
+        <div class="pad-role">Função: ${cfg ? cfg.role : '—'}${profileLabel ? ' · ' + profileLabel : ''}</div>
         <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}</div>`;
       list.appendChild(div);
     });
@@ -223,11 +224,14 @@
     const state = USBMapping.getState();
     const padIndexes = pads.length ? pads.map(p => p.index) : [0];
     padIndexes.forEach(idx => {
+      const padInfo = pads.find(p => p.index === idx);
       const padCfg = state.pads[idx] || (state.bindAllPads && state.pads[0]) || { role: 'lead', bindings: [] };
       const div = document.createElement('div');
       div.className = 'mapping-pad';
       const h = document.createElement('h3');
-      h.textContent = 'Comando ' + (idx + 1);
+      const profileKey = padCfg.profile || (padInfo && padInfo.profile);
+      const profileLabel = profileKey && USBMapping.PROFILES[profileKey] ? ' — ' + USBMapping.PROFILES[profileKey].label : '';
+      h.textContent = 'Comando ' + (idx + 1) + profileLabel;
       const roleSel = document.createElement('select');
       roleSel.className = 'pad-role-select';
       USBEngine.BUS_ROLES.forEach(r => {
