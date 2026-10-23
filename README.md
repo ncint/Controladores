@@ -6,7 +6,13 @@ Liga comandos USB (DualShock 3, comandos Nintendo antigos, genéricos...) ao com
 
 ## Funcionalidades
 
-### 🎹 Instrumento musical
+### 🎹 Instrumento musical (4 secções independentes)
+- **LEAD**: osciladores combinados (mistura de ondas + spread), filtro ressonante com envelope, portamento, vibrato (LFO) e delay.
+- **BASS**: suboscilador (-1 oitava), dois osciladores combinados, ataque definido, filtro ressonante e saturação (soft-clip tanh).
+- **CHORDS**: polifónico para acordes e pads com chorus estéreo verdadeiro (2 vozes detunadas com LFO), envelopes longos e reverb por convolução (impulso sintetizado com cauda filtrada).
+- **DRUMS**: amostras WAV geradas por síntese no próprio projeto (kick, snare, closed/open hi-hat, clap, 3 toms — kits 808/909), com fallback sintetizado enquanto carregam.
+- **Master**: volume geral na barra do topo + limiter (compressor de segurança) contra clipping.
+- Web Audio API pura (sem bibliotecas externas) — sem URLs externas, tudo no repositório.
 - **Sons por comando**: cada carta de comando tem os sons da sua voz, escolhidos com um clique — listas distintas e profissionais por voz:
   - **lead**: Supersaw (JP-8000), Lead Minimoog, Acid 303, Porta-lead (SH-101), Sino FM (DX7), Pluck trance, Whistle 8-bit
   - **bass**: Baixo Moog, Sub baixo, Acid 303 grave, Baixo 808, Reese (DnB), FM slap
@@ -113,11 +119,17 @@ Os testes cobrem: conversão de notas, limites de BPM, passos do sequenciador, e
 - Latência em sistemas com muitos dispositivos USB.
 - Comportamento ao ligar/desligar comandos durante a performance (a aplicação já deteta e atualiza, mas convém testar com o hardware real).
 
+## Amostras de bateria e licenças
+
+As amostras em `samples/*.wav` (kick, snare, hi-hats, clap, toms — kits 808 e 909) foram **geradas por síntese pelo próprio projeto** com `scripts/make-samples.js` (Node.js puro, sem dependências). São originais, sem restrições de redistribuição. Para regenerar: `node scripts/make-samples.js`.
+
 ## Arquitetura
 
 ```
 index.html          — interface
 css/style.css       — estilos
+samples/*.wav       — amostras de bateria (808/909)
+scripts/make-samples.js — gerador de amostras (Node puro)
 js/
   synth.js          — Web Audio API: osciladores, filtros, delay, reverb, distorção
   sequencer.js      — sequenciador de 16 passos com lookahead scheduling
