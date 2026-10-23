@@ -7,7 +7,8 @@ Liga comandos USB (DualShock 3, comandos Nintendo antigos, genéricos...) ao com
 ## Funcionalidades
 
 ### 🎹 Instrumento musical
-- **Sintetizador com Web Audio API**: 4 formas de onda (sine, triangle, square, sawtooth), 4 buses independentes (lead, bass, chords, drums).
+- **Menu de Sons**: 14 sons clássicos de sintetizador, escolhidos com um clique por voz (lead, bass, chords, drums) — Sub baixo, Baixo Moog, Acid 303, Baixo 808, Supersaw, Lead clássico, Pad etéreo, Pluck, Sino (FM), E-piano FM, Strings, Órgão, Chip 8-bit e Flauta.
+- **Sintetizador com Web Audio API** por baixo: 4 formas de onda, filtros, envelopes, delay, reverb, distorção e detune — configurados automaticamente pelo som escolhido.
 - **Filtros** (lowpass/highpass/bandpass/notch, com frequência, ressonância e envelope do filtro), **delay** (tempo, feedback, quantidade), **reverb** por convolução, **distorção** por waveshaping e **modulação** (detune).
 - **Sequenciador rítmico de 16 passos** com várias pistas, mute por pista, BPM e swing.
 - **Arpegiador** com padrões: subida, descida, sobe-desce, desce-sobe, aleatório, passeio aleatório, ordem premida; controlo de velocidade e oitavas.

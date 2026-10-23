@@ -112,7 +112,35 @@ const USBPresets = (() => {
 
   function names() { return Object.keys(PRESETS); }
 
-  return { SCALES, NOTE_NAMES, noteName, PRESETS, names, applyPreset, randomPattern, randomDrumPattern };
+  // Sons clássicos de sintetizador — cada entrada configura o bus por completo.
+  const SOUNDS = {
+    'Sub baixo':      { wave: 'sine',     filterType: 'lowpass', cutoff: 200,  resonance: 1,   filterEnv: 0.2, attack: 0.005, decay: 0.3,  sustain: 0.9, release: 0.15, detune: 0,   drive: 0,   delayMix: 0.05, delayTime: 0.2,  delayFeedback: 0.2, reverbMix: 0.05, volume: 0.9 },
+    'Baixo Moog':    { wave: 'sawtooth', filterType: 'lowpass', cutoff: 300,  resonance: 6,   filterEnv: 0.5, attack: 0.005, decay: 0.25, sustain: 0.7, release: 0.12, detune: 4,   drive: 0.25,delayMix: 0.03, delayTime: 0.15, delayFeedback: 0.15, reverbMix: 0.06, volume: 0.85 },
+    'Acid 303':      { wave: 'square',   filterType: 'lowpass', cutoff: 450,  resonance: 14,  filterEnv: 0.9, attack: 0.001, decay: 0.14, sustain: 0.25,release: 0.08, detune: 0,   drive: 0.45,delayMix: 0.12, delayTime: 0.25, delayFeedback: 0.35, reverbMix: 0.05, volume: 0.8 },
+    'Baixo 808':     { wave: 'sine',     filterType: 'lowpass', cutoff: 160,  resonance: 2,   filterEnv: 0.3, attack: 0.002, decay: 0.9,  sustain: 0.6, release: 0.5,  detune: 0,   drive: 0.1,  delayMix: 0.02, delayTime: 0.3,  delayFeedback: 0.2, reverbMix: 0.04, volume: 0.95 },
+    'Supersaw':      { wave: 'sawtooth', filterType: 'lowpass', cutoff: 2500, resonance: 3,   filterEnv: 0.25,attack: 0.01,  decay: 0.3,  sustain: 0.8, release: 0.4,  detune: 18,  drive: 0.1,  delayMix: 0.15, delayTime: 0.3,  delayFeedback: 0.3, reverbMix: 0.3,  volume: 0.65 },
+    'Lead clássico': { wave: 'square',   filterType: 'lowpass', cutoff: 1800, resonance: 4,   filterEnv: 0.35,attack: 0.005, decay: 0.2,  sustain: 0.7, release: 0.2,  detune: 7,   drive: 0.2,  delayMix: 0.25, delayTime: 0.35, delayFeedback: 0.4, reverbMix: 0.2,  volume: 0.7 },
+    'Pad etéreo':    { wave: 'sawtooth', filterType: 'lowpass', cutoff: 900,  resonance: 1.5, filterEnv: 0.2, attack: 0.8,  decay: 1.5,  sustain: 0.85,release: 2.2,  detune: 12,  drive: 0,    delayMix: 0.3,  delayTime: 0.5,  delayFeedback: 0.45, reverbMix: 0.55, volume: 0.5 },
+    'Pluck':         { wave: 'sawtooth', filterType: 'lowpass', cutoff: 2200, resonance: 5,   filterEnv: 0.8, attack: 0.001, decay: 0.22, sustain: 0.1, release: 0.25, detune: 0,   drive: 0.05, delayMix: 0.28, delayTime: 0.4,  delayFeedback: 0.35, reverbMix: 0.25, volume: 0.7 },
+    'Sino (FM)':    { wave: 'sine',     filterType: 'lowpass', cutoff: 4000, resonance: 2,   filterEnv: 0.15,attack: 0.001, decay: 1.4,  sustain: 0.0, release: 1.6,  detune: 0,   drive: 0,    delayMix: 0.2,  delayTime: 0.45, delayFeedback: 0.3, reverbMix: 0.4,  volume: 0.65 },
+    'E-piano FM':   { wave: 'sine',     filterType: 'lowpass', cutoff: 3000, resonance: 1,   filterEnv: 0.3, attack: 0.002, decay: 0.8,  sustain: 0.35,release: 0.9,  detune: 3,   drive: 0,    delayMix: 0.12, delayTime: 0.3,  delayFeedback: 0.25, reverbMix: 0.3,  volume: 0.7 },
+    'Strings':      { wave: 'sawtooth', filterType: 'lowpass', cutoff: 1600, resonance: 1,   filterEnv: 0.15,attack: 0.35, decay: 0.8,  sustain: 0.85,release: 1.2,  detune: 10,  drive: 0,    delayMix: 0.15, delayTime: 0.4,  delayFeedback: 0.3, reverbMix: 0.5,  volume: 0.5 },
+    'Órgão':         { wave: 'square',   filterType: 'lowpass', cutoff: 2000, resonance: 0.8, filterEnv: 0,   attack: 0.005, decay: 0.01, sustain: 1.0, release: 0.06, detune: 0,   drive: 0.05, delayMix: 0.08, delayTime: 0.25, delayFeedback: 0.2, reverbMix: 0.18, volume: 0.55 },
+    'Chip 8-bit':   { wave: 'square',   filterType: 'lowpass', cutoff: 5000, resonance: 0.5, filterEnv: 0,   attack: 0.001, decay: 0.05, sustain: 0.6, release: 0.03, detune: 0,   drive: 0,    delayMix: 0.05, delayTime: 0.12, delayFeedback: 0.15, reverbMix: 0.05, volume: 0.6 },
+    'Flauta':        { wave: 'triangle', filterType: 'lowpass', cutoff: 1400, resonance: 1,   filterEnv: 0.2, attack: 0.06,  decay: 0.2,  sustain: 0.85,release: 0.25, detune: 2,   drive: 0,    delayMix: 0.18, delayTime: 0.35, delayFeedback: 0.3, reverbMix: 0.35, volume: 0.7 },
+  };
+
+  function soundNames() { return Object.keys(SOUNDS); }
+
+  function applySound(busName, soundName) {
+    const bus = USBSynth.getBus(busName);
+    const s = SOUNDS[soundName];
+    if (!bus || !s) return false;
+    USBSynth.applyParams(bus, s);
+    return true;
+  }
+
+  return { SCALES, NOTE_NAMES, noteName, PRESETS, names, applyPreset, randomPattern, randomDrumPattern, SOUNDS, soundNames, applySound };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = USBPresets;

@@ -1,30 +1,11 @@
 (() => {
   let started = false;
-  let activeSynthTab = 'lead';
-  let arpRateMs = 125;
+    let arpRateMs = 125;
   let flashTimeouts = {};
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  const SYNTH_CTLS = [
-    { key: 'wave', label: 'Forma de onda', type: 'select', options: ['sine', 'triangle', 'square', 'sawtooth'] },
-    { key: 'filterType', label: 'Tipo de filtro', type: 'select', options: ['lowpass', 'highpass', 'bandpass', 'notch'] },
-    { key: 'cutoff', label: 'Filtro: frequência', type: 'range', min: 100, max: 6000, step: 10 },
-    { key: 'resonance', label: 'Filtro: ressonância', type: 'range', min: 0, max: 20, step: 0.1 },
-    { key: 'filterEnv', label: 'Envelope do filtro', type: 'range', min: 0, max: 1, step: 0.01 },
-    { key: 'attack', label: 'Ataque', type: 'range', min: 0.001, max: 1, step: 0.001 },
-    { key: 'decay', label: 'Decaimento', type: 'range', min: 0.01, max: 2, step: 0.01 },
-    { key: 'sustain', label: 'Sustain', type: 'range', min: 0, max: 1, step: 0.01 },
-    { key: 'release', label: 'Release', type: 'range', min: 0.01, max: 3, step: 0.01 },
-    { key: 'detune', label: 'Detune', type: 'range', min: -50, max: 50, step: 1 },
-    { key: 'drive', label: 'Distorção', type: 'range', min: 0, max: 1, step: 0.01 },
-    { key: 'delayTime', label: 'Delay: tempo', type: 'range', min: 0.02, max: 1.5, step: 0.01 },
-    { key: 'delayFeedback', label: 'Delay: feedback', type: 'range', min: 0, max: 0.85, step: 0.01 },
-    { key: 'delayMix', label: 'Delay: quantidade', type: 'range', min: 0, max: 1, step: 0.01 },
-    { key: 'reverbMix', label: 'Reverb', type: 'range', min: 0, max: 1, step: 0.01 },
-    { key: 'volume', label: 'Volume', type: 'range', min: 0, max: 1, step: 0.01 },
-  ];
 
   function start() {
     if (started) return;
@@ -32,7 +13,7 @@
     USBEngine.init();
     $('#startOverlay').style.display = 'none';
     buildPresetSelect();
-    buildSynthControls();
+    buildSoundPicker();
     buildSeqGrid();
     buildMappingUI();
     refreshPads();
@@ -208,48 +189,31 @@
     $$(`.seq-step[data-step="${step}"]`).forEach(c => c.classList.add('current'));
   }
 
-  function buildSynthControls() {
-    const tabs = $('#synthTabs');
-    tabs.innerHTML = '';
-    USBEngine.BUS_ROLES.forEach(role => {
-      const t = document.createElement('button');
-      t.className = 'synth-tab' + (role === activeSynthTab ? ' active' : '');
-      t.textContent = role;
-      t.onclick = () => { activeSynthTab = role; buildSynthControls(); };
-      tabs.appendChild(t);
-    });
-    const box = $('#synthControls');
+  const currentSounds = {};
+  function buildSoundPicker() {
+    const box = $('#soundPicker');
+    if (!box) return;
     box.innerHTML = '';
-    const bus = USBSynth.getBus(activeSynthTab);
-    if (!bus) return;
-    SYNTH_CTLS.forEach(ctl => {
-      const div = document.createElement('div');
-      div.className = 'synth-ctl';
-      const label = document.createElement('label');
-      label.textContent = ctl.label;
-      div.appendChild(label);
-      let input;
-      if (ctl.type === 'select') {
-        input = document.createElement('select');
-        ctl.options.forEach(o => {
-          const opt = document.createElement('option');
-          opt.value = o; opt.textContent = o;
-          input.appendChild(opt);
-        });
-        input.value = bus.cfg[ctl.key];
-      } else {
-        input = document.createElement('input');
-        input.type = 'range';
-        input.min = ctl.min; input.max = ctl.max; input.step = ctl.step;
-        input.value = bus.cfg[ctl.key];
-      }
-      input.oninput = () => {
-        let v = input.value;
-        if (ctl.type === 'range') v = parseFloat(v);
-        USBSynth.applyParams(bus, { [ctl.key]: v });
-      };
-      div.appendChild(input);
-      box.appendChild(div);
+    USBEngine.BUS_ROLES.forEach(role => {
+      const block = document.createElement('div');
+      block.className = 'sound-voice-block';
+      const title = document.createElement('div');
+      title.className = 'sound-voice-title';
+      title.textContent = role;
+      block.appendChild(title);
+      USBPresets.soundNames().forEach(name => {
+        const btn = document.createElement('button');
+        btn.className = 'sound-btn' + (currentSounds[role] === name ? ' active' : '');
+        btn.textContent = name;
+        btn.onclick = () => {
+          currentSounds[role] = name;
+          USBPresets.applySound(role, name);
+          buildSoundPicker();
+          flash('Voz ' + role + ': ' + name);
+        };
+        block.appendChild(btn);
+      });
+      box.appendChild(block);
     });
   }
 
