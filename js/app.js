@@ -13,7 +13,6 @@
     USBEngine.init();
     $('#startOverlay').style.display = 'none';
     buildPresetSelect();
-    buildSoundPicker();
     buildSeqGrid();
     buildMappingUI();
     refreshPads();
@@ -80,13 +79,16 @@
       div.className = 'pad-card';
       div.id = 'pad-card-' + p.index;
       const profileLabel = (p.profile && USBMapping.PROFILES[p.profile]) ? USBMapping.PROFILES[p.profile].label : null;
+      const role = cfg ? cfg.role : 'lead';
+      const currentSound = currentSounds[role];
+      const soundNames = USBPresets.soundNames(role);
       div.innerHTML = `
         <div class="pad-title"><span class="pad-dot" id="pad-dot-${p.index}"></span>Comando ${p.index + 1}</div>
         <div class="pad-id">${p.id}</div>
         <div class="pad-role">
           <label class="pad-role-select-label">Voz:
             <select id="pad-role-${p.index}" class="pad-role-select">
-              ${USBEngine.BUS_ROLES.map(r => `<option value="${r}" ${cfg && cfg.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+              ${USBEngine.BUS_ROLES.map(r => `<option value="${r}" ${role === r ? 'selected' : ''}>${r}</option>`).join('')}
             </select>
           </label>
           <label class="pad-role-select-label">Perfil:
@@ -95,7 +97,10 @@
             </select>
           </label>
         </div>
-        <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}</div>
+        <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}${profileLabel ? ' · ' + profileLabel : ''}</div>
+        <div class="pad-sounds" id="pad-sounds-${p.index}">
+          ${soundNames.map(name => `<button class="sound-btn${name === currentSound ? ' active' : ''}" data-sound="${name}">${name}</button>`).join('')}
+        </div>
         <div class="pad-last" id="pad-last-${p.index}">—</div>`;
       div.querySelector(`#pad-role-${p.index}`).onchange = (e) => {
         USBMapping.setBinding(p.index, null, null, null, e.target.value);
@@ -106,6 +111,14 @@
         refreshPads();
         flash('Perfil aplicado: ' + USBMapping.PROFILES[e.target.value].label);
       };
+      div.querySelectorAll('.sound-btn').forEach(btn => {
+        btn.onclick = () => {
+          currentSounds[role] = btn.dataset.sound;
+          USBPresets.applySound(role, btn.dataset.sound);
+          refreshPads();
+          flash('Voz ' + role + ': ' + btn.dataset.sound);
+        };
+      });
       list.appendChild(div);
     });
   }
@@ -190,32 +203,6 @@
   }
 
   const currentSounds = {};
-  function buildSoundPicker() {
-    const box = $('#soundPicker');
-    if (!box) return;
-    box.innerHTML = '';
-    USBEngine.BUS_ROLES.forEach(role => {
-      const block = document.createElement('div');
-      block.className = 'sound-voice-block';
-      const title = document.createElement('div');
-      title.className = 'sound-voice-title';
-      title.textContent = role;
-      block.appendChild(title);
-      USBPresets.soundNames().forEach(name => {
-        const btn = document.createElement('button');
-        btn.className = 'sound-btn' + (currentSounds[role] === name ? ' active' : '');
-        btn.textContent = name;
-        btn.onclick = () => {
-          currentSounds[role] = name;
-          USBPresets.applySound(role, name);
-          buildSoundPicker();
-          flash('Voz ' + role + ': ' + name);
-        };
-        block.appendChild(btn);
-      });
-      box.appendChild(block);
-    });
-  }
 
   function buildMappingUI() {
     const box = $('#mappingUI');

@@ -221,78 +221,6 @@ const USBSynth = (() => {
     return voice;
   }
 
-  function triggerPercussion(bus, kind, time, velocity = 1) {
-    if (!ctx) return;
-    const t = time !== undefined ? time : ctx.currentTime;
-    velocity = Math.min(1, Math.max(0, velocity));
-    if (kind === 'kick') {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, t);
-      osc.frequency.exponentialRampToValueAtTime(45, t + 0.12);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(velocity * 0.9, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-      osc.connect(g);
-      g.connect(bus.filter);
-      osc.start(t);
-      osc.stop(t + 0.3);
-      osc.onended = () => g.disconnect();
-    } else if (kind === 'snare') {
-      if (!NOISE_CACHE) NOISE_CACHE = makeNoiseBuffer();
-      const src = ctx.createBufferSource();
-      src.buffer = NOISE_CACHE;
-      const bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = 1800;
-      bp.Q.value = 0.8;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(velocity * 0.5, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-      src.connect(bp);
-      bp.connect(g);
-      g.connect(bus.filter);
-      src.start(t);
-      src.stop(t + 0.2);
-      src.onended = () => g.disconnect();
-    } else if (kind === 'hat') {
-      if (!NOISE_CACHE) NOISE_CACHE = makeNoiseBuffer();
-      const src = ctx.createBufferSource();
-      src.buffer = NOISE_CACHE;
-      const hp = ctx.createBiquadFilter();
-      hp.type = 'highpass';
-      hp.frequency.value = 7000;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(velocity * 0.3, t);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-      src.connect(hp);
-      hp.connect(g);
-      g.connect(bus.filter);
-      src.start(t);
-      src.stop(t + 0.08);
-      src.onended = () => g.disconnect();
-    } else if (kind === 'clap') {
-      if (!NOISE_CACHE) NOISE_CACHE = makeNoiseBuffer();
-      for (let i = 0; i < 3; i++) {
-        const src = ctx.createBufferSource();
-        src.buffer = NOISE_CACHE;
-        const bp = ctx.createBiquadFilter();
-        bp.type = 'bandpass';
-        bp.frequency.value = 1200;
-        bp.Q.value = 1.5;
-        const g = ctx.createGain();
-        const tt = t + i * 0.02;
-        g.gain.setValueAtTime(velocity * 0.4, tt);
-        g.gain.exponentialRampToValueAtTime(0.001, tt + 0.1 + i * 0.02);
-        src.connect(bp);
-        bp.connect(g);
-        g.connect(bus.filter);
-        src.start(tt);
-        src.stop(tt + 0.2);
-      }
-    }
-  }
-
   function applyParams(bus, params) {
     const cfg = bus.cfg;
     let reverbDirty = false;
@@ -362,9 +290,110 @@ const USBSynth = (() => {
   function context() { return ctx; }
   function masterNode() { return master; }
 
+  const DRUM_KITS = {
+    '808':      { kickStart: 150, kickEnd: 42, kickDur: 0.28, kickDrive: 0.0, snareFreq: 1800, snareNoise: 0.55, snareTone: 0.1, hatFreq: 8000, hatDur: 0.05, clapSpread: 0.02 },
+    '909':      { kickStart: 220, kickEnd: 48, kickDur: 0.2,  kickDrive: 0.3, snareFreq: 2200, snareNoise: 0.65, snareTone: 0.14, hatFreq: 9500, hatDur: 0.04, clapSpread: 0.015 },
+    'acoustic': { kickStart: 120, kickEnd: 55, kickDur: 0.18, kickDrive: 0.0, snareFreq: 1500, snareNoise: 0.45, snareTone: 0.2,  hatFreq: 6500, hatDur: 0.07, clapSpread: 0.03 },
+    'lofi':     { kickStart: 100, kickEnd: 50, kickDur: 0.3,  kickDrive: 0.15, snareFreq: 1200, snareNoise: 0.4,  snareTone: 0.3,  hatFreq: 5500, hatDur: 0.09, clapSpread: 0.04 },
+  };
+  let currentKit = { drums: '808' };
+
+  function setDrumKit(busName, kit) {
+    if (DRUM_KITS[kit]) currentKit[busName] = kit;
+  }
+
+  function getDrumKit(busName) { return currentKit[busName] || '808'; }
+
+  function triggerPercussion(bus, kind, time, velocity = 1) {
+    if (!ctx) return;
+    const t = time !== undefined ? time : ctx.currentTime;
+    velocity = Math.min(1, Math.max(0, velocity));
+    const kit = DRUM_KITS[getDrumKit(bus.name)] || DRUM_KITS['808'];
+    if (kind === 'kick') {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(kit.kickStart, t);
+      osc.frequency.exponentialRampToValueAtTime(kit.kickEnd, t + kit.kickDur * 0.5);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(velocity * (0.9 + kit.kickDrive), t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + kit.kickDur);
+      const shaper = ctx.createWaveShaper();
+      shaper.curve = distortionCurve(kit.kickDrive * 30);
+      osc.connect(g);
+      g.connect(shaper);
+      shaper.connect(bus.filter);
+      osc.start(t);
+      osc.stop(t + kit.kickDur + 0.05);
+      osc.onended = () => { g.disconnect(); shaper.disconnect(); };
+    } else if (kind === 'snare') {
+      if (!NOISE_CACHE) NOISE_CACHE = makeNoiseBuffer();
+      const src = ctx.createBufferSource();
+      src.buffer = NOISE_CACHE;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = kit.snareFreq;
+      bp.Q.value = 0.8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(velocity * kit.snareNoise, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + kit.snareTone + 0.12);
+      const tone = ctx.createOscillator();
+      tone.type = 'triangle';
+      tone.frequency.value = 190;
+      const tg = ctx.createGain();
+      tg.gain.setValueAtTime(velocity * kit.snareTone, t);
+      tg.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(bus.filter);
+      tone.connect(tg);
+      tg.connect(bus.filter);
+      src.start(t);
+      src.stop(t + 0.25);
+      tone.start(t);
+      tone.stop(t + 0.1);
+      src.onended = () => { g.disconnect(); tg.disconnect(); };
+    } else if (kind === 'hat') {
+      if (!NOISE_CACHE) NOISE_CACHE = makeNoiseBuffer();
+      const src = ctx.createBufferSource();
+      src.buffer = NOISE_CACHE;
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = kit.hatFreq;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(velocity * 0.3, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + kit.hatDur);
+      src.connect(hp);
+      hp.connect(g);
+      g.connect(bus.filter);
+      src.start(t);
+      src.stop(t + kit.hatDur + 0.02);
+      src.onended = () => g.disconnect();
+    } else if (kind === 'clap') {
+      if (!NOISE_CACHE) NOISE_CACHE = makeNoiseBuffer();
+      const n = kit.clapSpread > 0.03 ? 3 : 3;
+      for (let i = 0; i < n; i++) {
+        const src = ctx.createBufferSource();
+        src.buffer = NOISE_CACHE;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 1200;
+        bp.Q.value = 1.5;
+        const g = ctx.createGain();
+        const tt = t + i * kit.clapSpread;
+        g.gain.setValueAtTime(velocity * 0.4, tt);
+        g.gain.exponentialRampToValueAtTime(0.001, tt + 0.1 + i * kit.clapSpread);
+        src.connect(bp);
+        bp.connect(g);
+        g.connect(bus.filter);
+        src.start(tt);
+        src.stop(tt + 0.2);
+      }
+    }
+  }
+
   return {
     ensure, makeBus, getBus, allBuses, triggerVoice, triggerPercussion,
-    applyParams, noteToFreq, panic, context, masterNode,
+    applyParams, noteToFreq, panic, context, masterNode, setDrumKit, getDrumKit,
   };
 })();
 

@@ -180,15 +180,14 @@ select {
 .switch { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); cursor: pointer; }
 .switch input { accent-color: var(--ok); }
 
-.sound-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.sound-voice-block { background: var(--panel2); border: 1px solid #2c314a; border-radius: 12px; padding: 12px; }
-.sound-voice-title { font-size: 13px; color: var(--accent); margin-bottom: 8px; font-weight: 700; }
+.pad-sounds { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 8px; }
 .sound-btn {
-  display: block; width: 100%; text-align: left;
+  text-align: left;
   background: #232741; color: var(--text); border: 1px solid #2c314a;
-  border-radius: 8px; padding: 6px 10px; margin-bottom: 6px;
-  cursor: pointer; font-size: 13px;
+  border-radius: 8px; padding: 5px 8px;
+  cursor: pointer; font-size: 12px;
   transition: background 0.15s ease;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sound-btn:hover { background: #2c314a; }
 .sound-btn.active {

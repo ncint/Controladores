@@ -77,18 +77,22 @@ class FakeAudioContext {
   section('Interface');
   const presetOptions = window.document.querySelectorAll('#presetSelect option');
   assert(presetOptions.length === 5, 'seletor tem 5 presets');
-  const soundBlocks = window.document.querySelectorAll('.sound-voice-block');
-  assert(soundBlocks.length === 4, '4 blocos de voz no seletor de sons');
-  const soundBtns = window.document.querySelectorAll('.sound-btn');
-  assert(soundBtns.length >= 4 * 14, 'cada voz tem >=14 sons (' + soundBtns.length + ' botões)');
-  // Clicar num som aplica-o ao bus correspondente
-  const bassBlock = soundBlocks[1];
-  const moogBtn = Array.from(bassBlock.querySelectorAll('.sound-btn')).find(b => b.textContent === 'Baixo Moog');
-  moogBtn.click();
+  // Painel Sons removido: sons escolhidos na carta do comando
+  assert(window.document.querySelector('#soundPicker') === null, 'painel Sons separado removido');
+  const voices = ['lead', 'bass', 'chords', 'drums'];
+  voices.forEach(v => {
+    const names = window.USBPresets.soundNames(v);
+    assert(names.length >= 4, 'voz ' + v + ' tem >=4 sons próprios (' + names.length + ')');
+  });
+  const leadNames = window.USBPresets.soundNames('lead');
+  const bassNames = window.USBPresets.soundNames('bass');
+  assert(!leadNames.some(n => bassNames.includes(n)), 'sons de lead e bass são distintos');
+  assert(window.USBPresets.soundNames('drums').every(n => n.startsWith('Kit')), 'voz drums tem kits de bateria');
+  // Aplicar som muda o bus
+  window.USBPresets.applySound('bass', 'Baixo Moog');
   assert(window.USBSynth.getBus('bass').cfg.wave === 'sawtooth', 'som "Baixo Moog" aplica onda sawtooth ao bus bass');
-  assert(window.USBSynth.getBus('bass').cfg.resonance === 6, 'som "Baog Moog" aplica ressonância 6');
-  const moogBtnAfter = Array.from(window.document.querySelectorAll('.sound-voice-block')[1].querySelectorAll('.sound-btn')).find(b => b.textContent === 'Baixo Moog');
-assert(moogBtnAfter.classList.contains('active'), 'botão do som fica marcado como ativo');
+  window.USBPresets.applySound('drums', 'Kit 909');
+  assert(window.USBSynth.getDrumKit('drums') === '909', 'som "Kit 909" aplica kit 909');
 
   // Sequenciador: aplicar preset deve criar grelha
   const presetSel = window.document.querySelector('#presetSelect');
