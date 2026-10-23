@@ -100,22 +100,29 @@ const USBMapping = (() => {
       match: (id) => /snes|retro|8bitdo|nes|sfc|usb,2-axis 8-button|playstation.*classic|qanba/i.test(id),
       role: 'lead',
       // Gamepad API para SNES USB (mapping standard):
-      // botões 0-3 = X A B Y (face), 4-7 = L1 R1 L2? (varia), 8 = select, 9 = start,
-      // 12-15 = d-pad. Alguns adaptadores reportam d-pad como eixos 0-1.
+      // botões 0-3 = X A B Y (face), 4-7 = ombros, 8 = select, 9 = start,
+      // 12-15 = d-pad (quando reportado como botões). Alguns adaptadores
+      // reportam o d-pad como eixos 0-1.
+      // TODOS os botões tocam notas: graus consecutivos da escala.
       bindings: [
-        // Face: A B X Y = acorde base (fundamental, 3ª, 4ª, 5ª)
+        // Face: A B X Y = graus 0-3
         { type: 'button', index: 0, action: 'note', param: 0 },
-        { type: 'button', index: 1, action: 'note', param: 2 },
-        { type: 'button', index: 2, action: 'note', param: 4 },
-        { type: 'button', index: 3, action: 'note', param: 6 },
-        // Ombros L/R = oitava e sustain
-        { type: 'button', index: 4, action: 'octaveDown' },
-        { type: 'button', index: 5, action: 'octaveUp' },
-        { type: 'button', index: 6, action: 'sustain' },
-        { type: 'button', index: 7, action: 'arpToggle' },
-        // Select = panic, Start = sequenciador
-        { type: 'button', index: 8, action: 'panic' },
-        { type: 'button', index: 9, action: 'playStop' },
+        { type: 'button', index: 1, action: 'note', param: 1 },
+        { type: 'button', index: 2, action: 'note', param: 2 },
+        { type: 'button', index: 3, action: 'note', param: 3 },
+        // Ombros = graus 4-7
+        { type: 'button', index: 4, action: 'note', param: 4 },
+        { type: 'button', index: 5, action: 'note', param: 5 },
+        { type: 'button', index: 6, action: 'note', param: 6 },
+        { type: 'button', index: 7, action: 'note', param: 7 },
+        // Select/Start = graus 8-9
+        { type: 'button', index: 8, action: 'note', param: 8 },
+        { type: 'button', index: 9, action: 'note', param: 9 },
+        // D-pad como botões (12-15) = graus 10-13 (duas oitavas acima da fundamental)
+        { type: 'button', index: 12, action: 'note', param: 14 },
+        { type: 'button', index: 13, action: 'note', param: 15 },
+        { type: 'button', index: 14, action: 'note', param: 16 },
+        { type: 'button', index: 15, action: 'note', param: 17 },
         // Eixos (se o adaptador reportar d-pad como eixos): X = pitch bend, Y = cutoff
         { type: 'axis', index: 0, action: 'pitchBend' },
         { type: 'axis', index: 1, action: 'cutoff' },
@@ -141,7 +148,21 @@ const USBMapping = (() => {
     if (cfg && cfg.bindings && cfg.bindings.length) return cfg;
     const key = detectProfile(padId, buttonCount, axisCount);
     const profile = PROFILES[key];
-    state.pads[padIndex] = { role: profile.role, profile: key, bindings: JSON.parse(JSON.stringify(profile.bindings)) };
+    let bindings = JSON.parse(JSON.stringify(profile.bindings));
+    if (key === 'snes') {
+      // Todos os botões tocam notas, apenas os que existem no comando.
+      bindings = [];
+      const n = Math.min(buttonCount || 16, 16);
+      for (let b = 0; b < n; b++) {
+        bindings.push({ type: 'button', index: b, action: 'note', param: b });
+      }
+      // Eixos (se o adaptador reportar d-pad como eixos): X = pitch bend, Y = cutoff
+      const ax = Math.min(axisCount || 0, 2);
+      for (let a = 0; a < ax; a++) {
+        bindings.push({ type: 'axis', index: a, action: a === 0 ? 'pitchBend' : 'cutoff' });
+      }
+    }
+    state.pads[padIndex] = { role: profile.role, profile: key, bindings };
     save();
     return state.pads[padIndex];
   }

@@ -62,16 +62,14 @@ Como os graus estão em escala, **qualquer combinação de botões soa bem** —
 
 #### Comandos SNES / retro (sem sticks)
 
-Adaptadores SNES USB (e comandos retro em geral) recebem um perfil próprio, detetado automaticamente pelo ID do dispositivo ou pela heurística (poucos botões, sem sticks):
+Adaptadores SNES USB (e comandos retro em geral) recebem um perfil próprio, detetado automaticamente pelo ID do dispositivo ou pela heurística (poucos botões, sem sticks). Neste perfil, **todos os botões tocam notas** — graus consecutivos da escala, adaptados ao número de botões que o comando reportar:
 
 | Controlo | Ação |
 |---|---|
-| A B X Y (face) | Notas — fundamental, 3ª, 4ª, 5ª |
-| L / R | Oitava − / + |
-| ZL / ZR (botões 6-7) | Sustain / Arpejo |
-| Select | Panic |
-| Start | Play / Stop do sequenciador |
-| D-pad (se for eixos) | Pitch bend / Cutoff |
+| Todos os botões (A B X Y, ombros, Select, Start, D-pad se for botões) | Notas — graus consecutivos (fundamental, 2ª, 3ª, … ) |
+| D-pad (se o adaptador o reportar como eixos) | Pitch bend (X) / Cutoff do filtro (Y) |
+
+Como os graus estão em escala, **qualquer combinação de botões soa bem** e podes premir vários ao mesmo tempo (polifonia). O comando torna-se um teclado: os botões de face são as notas graves, os ombros e Select/Start as médias/altas.
 
 > Os índices de botões variam entre adaptadores e navegadores. Se um botão não fizer o esperado, usa o modo Aprender para o remapear — escolhe a ação “Nota (grau da escala)” e prime o botão; ele recebe automaticamente o próximo grau livre. Fica guardado no navegador.
 

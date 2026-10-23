@@ -189,10 +189,13 @@ assert(USBMapping.detectProfile('Xbox 360 Controller', 16, 4) === 'generic', 'Xb
 assert(USBMapping.detectProfile('Generic Retro Pad', 10, 1) === 'snes', 'heurística: poucos botões/eixos → SNES');
 const snesCfg = USBMapping.profileFor(5, 'USB SNES Controller', 10, 2);
 assert(snesCfg.profile === 'snes', 'profileFor cria config SNES para comando novo');
-const snesNotes = snesCfg.bindings.filter(b => b.action === 'note');
-assert(snesNotes.length >= 4, 'perfil SNES mapeia >=4 botões como notas');
-assert(snesCfg.bindings.some(b => b.action === 'sustain'), 'perfil SNES tem sustain (L)');
-assert(snesCfg.bindings.some(b => b.action === 'octaveUp'), 'perfil SNES tem oitava (R)');
+const snesNotes = snesCfg.bindings.filter(b => b.action === 'note' && b.type === 'button');
+assert(snesNotes.length === 10, 'TODOS os 10 botões do SNES tocam notas');
+assert(snesCfg.bindings.every(b => b.action === 'note' || b.action === 'pitchBend' || b.action === 'cutoff'), 'perfil SNES: só notas e eixos de expressão');
+assert(snesCfg.bindings.filter(b => b.type === 'axis').length === 2, 'eixos do SNES mapeados (pitch bend + cutoff)');
+const snesCfg2 = USBMapping.profileFor(7, '8BitDo SNES Retro', 16, 0);
+assert(snesCfg2.bindings.filter(b => b.type === 'button').length === 16, 'SNES com 16 botões: todos tocam notas');
+assert(snesCfg2.bindings.filter(b => b.type === 'axis').length === 0, 'SNES sem eixos: nenhum binding de eixo');
 const genericCfg = USBMapping.profileFor(6, 'Sony DualShock 3 (STANDARD)', 17, 6);
 assert(genericCfg.profile === 'generic', 'profileFor cria config genérica para DualShock');
 assert(genericCfg.bindings.some(b => b.action === 'pitchBend'), 'perfil genérico tem pitch bend no stick');
