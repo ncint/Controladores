@@ -120,7 +120,6 @@ const USBEngine = (() => {
     USBSynth.setDrumKit('drums', '808');
     USBSynth.preloadKit('808');
     USBSynth.preloadKit('909');
-    USBArpeggiator.setBus('lead');
   }
 
   function activity(cb) { onActivity.push(cb); }
@@ -195,11 +194,13 @@ const USBEngine = (() => {
   }
 
   function arpAddNote(padIndex, midi) {
+    if (typeof USBArpeggiator === 'undefined' || !USBArpeggiator) return;
     arpHoldNotes[padIndex + ':arp'] = midi;
     USBArpeggiator.holdNotes(Object.values(arpHoldNotes));
   }
 
   function arpRemoveNote(padIndex) {
+    if (typeof USBArpeggiator === 'undefined' || !USBArpeggiator) return;
     delete arpHoldNotes[padIndex + ':arp'];
     USBArpeggiator.holdNotes(Object.values(arpHoldNotes));
   }
@@ -218,6 +219,7 @@ const USBEngine = (() => {
   let lastPresetName = null;
 
   function nextPreset(seq, arp) {
+    if (!seq) return;
     const names = USBPresets.names();
     const idx = names.indexOf(lastPresetName || '');
     currentPresetIndex = (idx >= 0 ? idx + 1 : 0) % names.length;
@@ -227,6 +229,7 @@ const USBEngine = (() => {
   }
 
   function randomizeAll(seq, arp) {
+    if (!seq) return;
     const scaleKeys = Object.keys(USBPresets.SCALES);
     const scale = USBPresets.SCALES[scaleKeys[Math.floor(Math.random() * scaleKeys.length)]];
     seq.setBpm(70 + Math.floor(Math.random() * 120));
@@ -242,6 +245,7 @@ const USBEngine = (() => {
   }
 
   function handle(change, seq, arp) {
+    seq = seq || null; arp = arp || null;
     if (!started) init();
     if (USBMapping.isLearning()) {
       if (USBMapping.feedLearn(change)) return true;
@@ -291,6 +295,7 @@ const USBEngine = (() => {
       const degree = binding.param || 0;
       const midi = degreeToMidi(role, degree);
       if (meta.arp) {
+        if (!arp) return false;
         if (change.type === 'axis') {
           if (Math.abs(change.value) > 0.15) {
             arpAddNote(change.padIndex, midi);
@@ -365,48 +370,11 @@ const USBEngine = (() => {
     if (!pressed) return false;
 
     switch (action) {
-      case 'playStop': seq.toggle(); break;
-      case 'arpToggle': arp.toggle(); break;
-      case 'arpPatternNext': {
-        const pats = USBArpeggiator.PATTERNS;
-        const cur = pats.indexOf(arp.getPattern());
-        arp.setPattern(pats[(cur + 1) % pats.length]);
-        break;
-      }
-      case 'bpmUp': seq.setBpm(seq.getBpm() + 5); break;
-      case 'bpmDown': seq.setBpm(seq.getBpm() - 5); break;
-      case 'seqStepToggle': {
-        const step = seq.currentStep() >= 0 ? seq.currentStep() : 0;
-        const st = seq.getState();
-        const tid = Object.keys(st.tracks).find(t => st.tracks[t].kind !== 'drum') || Object.keys(st.tracks)[0];
-        if (tid) {
-          const t = st.tracks[tid];
-          seq.setStep(tid, step, !t.steps[step]);
-        }
-        break;
-      }
-      case 'seqRandomTrack': {
-        const st = seq.getState();
-        const tid = Object.keys(st.tracks).find(t => st.tracks[t].kind !== 'drum') || Object.keys(st.tracks)[0];
-        if (tid) {
-          const scaleKeys = Object.keys(USBPresets.SCALES);
-          const scale = USBPresets.SCALES[scaleKeys[Math.floor(Math.random() * scaleKeys.length)]];
-          seq.randomizeTrack(tid, 0.35, scale, 2);
-        }
-        break;
-      }
-      case 'seqClearTrack': {
-        const st = seq.getState();
-        const tid = Object.keys(st.tracks)[0];
-        if (tid) seq.clearTrack(tid);
-        break;
-      }
-      case 'seqMuteTrack': {
-        const st = seq.getState();
-        const tid = Object.keys(st.tracks)[0];
-        if (tid) seq.toggleMute(tid);
-        break;
-      }
+      case 'playStop': if (seq) seq.toggle(); break;
+      case 'arpToggle': if (arp) arp.toggle(); break;
+      case 'arpPatternNext': if (arp && typeof USBArpeggiator !== 'undefined') { const pats = USBArpeggiator.PATTERNS; const cur = pats.indexOf(arp.getPattern()); arp.setPattern(pats[(cur + 1) % pats.length]); } break;
+      case 'bpmUp': if (seq) seq.setBpm(seq.getBpm() + 5); break;
+      case 'bpmDown': if (seq) seq.setBpm(seq.getBpm() - 5); break;
       case 'nextPreset': nextPreset(seq, arp); break;
       case 'randomizeAll': randomizeAll(seq, arp); break;
       case 'panic': USBSynth.panic(); break;

@@ -1,6 +1,5 @@
 (() => {
   let started = false;
-    let arpRateMs = 125;
   let flashTimeouts = {};
 
   const $ = (sel) => document.querySelector(sel);
@@ -12,42 +11,15 @@
     started = true;
     USBEngine.init();
     $('#startOverlay').style.display = 'none';
-    buildPresetSelect();
-    buildSeqGrid();
     buildMappingUI();
     refreshPads();
     USBGamepads.on('connect', () => { refreshPads(); buildMappingUI(); });
     USBGamepads.on('disconnect', () => { refreshPads(); });
     USBGamepads.on('change', (change) => {
-      USBEngine.handle(change, USBSequencer, USBArpeggiator);
+      USBEngine.handle(change, null, null);
       markPadActive(change.padIndex);
       showPadInput(change);
     });
-    USBSequencer.setCallbacks(renderStep, null);
-    USBArpeggiator.setOnNote(() => {});
-  }
-
-  function buildPresetSelect() {
-    const sel = $('#presetSelect');
-    sel.innerHTML = '';
-    USBPresets.names().forEach((n, i) => {
-      const o = document.createElement('option');
-      o.value = i; o.textContent = '🎚 ' + n;
-      sel.appendChild(o);
-    });
-    sel.onchange = () => {
-      const name = USBPresets.names()[sel.value];
-      USBPresets.applyPreset(name, USBSequencer, USBArpeggiator);
-      syncTransportUI();
-      buildSeqGrid();
-      flash('Preset: ' + name);
-    };
-  }
-
-  function syncTransportUI() {
-    $('#bpmInput').value = USBSequencer.getBpm();
-    $('#swingInput').value = Math.round(USBSequencer.getSwing() * 100);
-    $('#btnPlay').textContent = USBSequencer.isPlaying() ? '⏸ Parar' : '▶ Tocar';
   }
 
   function flash(msg) {
@@ -186,62 +158,6 @@
     }, 2500);
   }
 
-  function buildSeqGrid() {
-    const grid = $('#seqGrid');
-    grid.innerHTML = '';
-    const state = USBSequencer.getState();
-    const trackIds = Object.keys(state.tracks);
-    if (!trackIds.length) {
-      grid.innerHTML = '<p class="empty">Sem pistas. Escolhe um preset ou prime "🎲 Padrão".</p>';
-      return;
-    }
-    trackIds.forEach(id => {
-      const track = state.tracks[id];
-      const row = document.createElement('div');
-      row.className = 'seq-row';
-      const label = document.createElement('div');
-      label.className = 'seq-label';
-      label.textContent = id;
-      const stepsEl = document.createElement('div');
-      stepsEl.className = 'seq-steps';
-      for (let s = 0; s < USBSequencer.STEPS; s++) {
-        const cell = document.createElement('div');
-        cell.className = 'seq-step' + (track.steps[s] ? (track.kind === 'drum' ? ' drum-on' : ' on') : '');
-        cell.dataset.track = id;
-        cell.dataset.step = s;
-        cell.onpointerdown = () => {
-          const st = USBSequencer.getState();
-          const t = st.tracks[id];
-          USBSequencer.setStep(id, s, !t.steps[s]);
-          cell.classList.toggle('on', !t.steps[s]);
-          cell.classList.toggle('drum-on', track.kind === 'drum' && !t.steps[s]);
-        };
-        stepsEl.appendChild(cell);
-      }
-      const mute = document.createElement('button');
-      mute.className = 'mute-btn' + (USBSequencer.isMuted(id) ? ' muted' : '');
-      mute.textContent = USBSequencer.isMuted(id) ? '🔇' : '🔊';
-      mute.onclick = () => {
-        USBSequencer.toggleMute(id);
-        mute.textContent = USBSequencer.isMuted(id) ? '🔇' : '🔊';
-        mute.classList.toggle('muted', USBSequencer.isMuted(id));
-      };
-      row.appendChild(label);
-      row.appendChild(stepsEl);
-      row.appendChild(mute);
-      grid.appendChild(row);
-    });
-  }
-
-  let currentStepShown = -1;
-  function renderStep(step) {
-    if (step === currentStepShown) return;
-    currentStepShown = step;
-    $$('.seq-step').forEach(c => c.classList.remove('current'));
-    if (step < 0) return;
-    $$(`.seq-step[data-step="${step}"]`).forEach(c => c.classList.add('current'));
-  }
-
   const currentSounds = {};
 
   function buildMappingUI() {
@@ -327,35 +243,6 @@
   }
 
   function bindTransport() {
-    $('#btnPlay').onclick = () => {
-      USBSequencer.toggle();
-      $('#btnPlay').textContent = USBSequencer.isPlaying() ? '⏸ Parar' : '▶ Tocar';
-    };
-    $('#bpmInput').oninput = (e) => USBSequencer.setBpm(parseInt(e.target.value, 10));
-    $('#swingInput').oninput = (e) => USBSequencer.setSwing(parseInt(e.target.value, 10) / 100);
-    $('#btnRandomSeq').onclick = () => {
-      const scaleKeys = Object.keys(USBPresets.SCALES);
-      const scale = USBPresets.SCALES[scaleKeys[Math.floor(Math.random() * scaleKeys.length)]];
-      const st = USBSequencer.getState();
-      const ids = Object.keys(st.tracks);
-      if (!ids.length) {
-        USBSequencer.ensureTrack('lead', 'melodic');
-        USBSequencer.ensureTrack('drums', 'drum');
-      }
-      const st2 = USBSequencer.getState();
-      Object.keys(st2.tracks).forEach(id => {
-        if (st2.tracks[id].kind === 'drum') USBSequencer.randomizeDrumTrack(id, 0.3);
-        else USBSequencer.randomizeTrack(id, 0.35, scale, 2);
-      });
-      buildSeqGrid();
-      flash('Padrão aleatório gerado');
-    };
-    $('#btnClearSeq').onclick = () => { USBSequencer.clearAll(); buildSeqGrid(); };
-    $('#btnRandomAll').onclick = () => {
-      USBEngine.randomizeAll(USBSequencer, USBArpeggiator);
-      buildSeqGrid(); syncTransportUI();
-      flash('Variação aleatória');
-    };
     $('#btnPanic').onclick = () => { USBSynth.panic(); flash('Silenciado'); };
     $('#btnRescan').onclick = () => { USBGamepads.rescan(); refreshPads(); };
     $('#btnResetMapping').onclick = () => {
@@ -364,20 +251,6 @@
       flash('Mapeamento reposto');
     };
 
-    $('#arpEnable').onchange = (e) => {
-      if (e.target.checked !== USBArpeggiator.isEnabled()) USBArpeggiator.toggle();
-    };
-    $('#arpPattern').onchange = (e) => USBArpeggiator.setPattern(e.target.value);
-    $('#arpRate').oninput = (e) => {
-      arpRateMs = parseInt(e.target.value, 10);
-      USBArpeggiator.setRate(arpRateMs / 1000);
-    };
-    $('#arpOct').oninput = (e) => USBArpeggiator.setOctaves(parseInt(e.target.value, 10));
-    $('#arpClear').onclick = () => {
-      USBArpeggiator.clearNotes();
-      updateArpNotes();
-      flash('Notas do arpejo limpas');
-    };
   }
 
   function refreshAllMixerButtons() {
@@ -390,15 +263,6 @@
       if (muteBtn) muteBtn.classList.toggle('on-danger', m.muted);
       if (soloBtn) soloBtn.classList.toggle('on-accent', m.solo);
     });
-  }
-
-  function updateArpNotes() {
-    const el = $('#arpNotesList');
-    if (!el) return;
-    const notes = USBArpeggiator.heldNotes();
-    el.textContent = notes.length ? notes.map(n => USBPresets.noteName(n)).join('  ') : '—';
-    const cb = $('#arpEnable');
-    if (cb) cb.checked = USBArpeggiator.isEnabled();
   }
 
   function updateVUs() {
@@ -427,7 +291,6 @@
   function periodicRefresh() {
     setInterval(() => {
       if (USBGamepads.count() && $('#padsList').querySelector('.empty')) refreshPads();
-      updateArpNotes();
     }, 500);
     setInterval(updateVUs, 60);
   }

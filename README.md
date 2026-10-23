@@ -20,10 +20,6 @@ Liga comandos USB (DualShock 3, comandos Nintendo antigos, genéricos...) ao com
   - **drums**: Kit 808, Kit 909, Kit acústico, Kit lo-fi (kick/snare/hat/clap sintetizados com carácter próprio por kit)
 - **Sintetizador com Web Audio API** por baixo: 4 formas de onda, filtros, envelopes, delay, reverb, distorção e detune — configurados automaticamente pelo som escolhido.
 - **Filtros** (lowpass/highpass/bandpass/notch, com frequência, ressonância e envelope do filtro), **delay** (tempo, feedback, quantidade), **reverb** por convolução, **distorção** por waveshaping e **modulação** (detune).
-- **Sequenciador rítmico de 16 passos** com várias pistas, mute por pista, BPM e swing.
-- **Arpegiador** com padrões: subida, descida, sobe-desce, desce-sobe, aleatório, passeio aleatório, ordem premida; controlo de velocidade e oitavas.
-- **Presets** de sons e padrões (Básico, Techno, Ambiente, Glitch, Trap).
-- **Geração de variações aleatórias** por pista ou em todo o instrumento, com escalas musicais (pentatónicas, maior, menor, dórica, frígia, hirajoshi).
 
 ### 🎮 Comandos USB (Gamepad API)
 - Até **4 comandos simultâneos**, cada um com função própria (lead, bass, chords, drums).
@@ -132,8 +128,6 @@ samples/*.wav       — amostras de bateria (808/909)
 scripts/make-samples.js — gerador de amostras (Node puro)
 js/
   synth.js          — Web Audio API: osciladores, filtros, delay, reverb, distorção
-  sequencer.js      — sequenciador de 16 passos com lookahead scheduling
-  arpeggiator.js    — arpegiador com 7 padrões
   gamepads.js       — Gamepad API: até 4 comandos, deteção e leitura
   mapping.js        — ações, mapeamento predefinido, modo aprender, localStorage
   engine.js         — liga comandos a ações musicais (notas, efeitos, transporte)

@@ -53,8 +53,8 @@ class FakeAudioContext {
 window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)) });
   window.onerror = (msg) => errors.push(String(msg));
 
-  const jsFiles = ['presets.js','synth.js','sequencer.js','arpeggiator.js','gamepads.js','mapping.js','engine.js'];
-  const exportNames = {'presets.js':'USBPresets','synth.js':'USBSynth','sequencer.js':'USBSequencer','arpeggiator.js':'USBArpeggiator','gamepads.js':'USBGamepads','mapping.js':'USBMapping','engine.js':'USBEngine'};
+  const jsFiles = ['presets.js','synth.js','gamepads.js','mapping.js','engine.js'];
+  const exportNames = {'presets.js':'USBPresets','synth.js':'USBSynth','gamepads.js':'USBGamepads','mapping.js':'USBMapping','engine.js':'USBEngine'};
   jsFiles.forEach(f => {
     const code = fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8');
     try { window.eval(code + '\n;window.' + exportNames[f] + ' = ' + exportNames[f] + ';'); } catch (e) { errors.push(`ao carrying ${f}: ${e.message}`); }
@@ -95,8 +95,6 @@ window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new Ar
   assert(true, 'ajustar volume geral não lança erro');
 
   section('Interface');
-  const presetOptions = window.document.querySelectorAll('#presetSelect option');
-  assert(presetOptions.length === 5, 'seletor tem 5 presets');
   // Painel Sons removido: sons escolhidos na carta do comando
   assert(window.document.querySelector('#soundPicker') === null, 'painel Sons separado removido');
   const voices = ['lead', 'bass', 'chords', 'drums'];
@@ -132,44 +130,12 @@ window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new Ar
   window.USBPresets.applySound('drums', 'Kit 909');
   assert(window.USBSynth.getDrumKit('drums') === '909', 'som "Kit 909" aplica kit 909');
 
-  // Sequenciador: aplicar preset deve criar grelha
-  const presetSel = window.document.querySelector('#presetSelect');
-  presetSel.value = '1'; fire(window, presetSel, 'change');
-  const rows = window.document.querySelectorAll('.seq-row');
-  assert(rows.length === 3, 'preset Techno mostra 3 pistas na grelha');
-  const steps = window.document.querySelectorAll('.seq-step');
-  assert(steps.length === 48, '48 células de passo (3×16)');
 
-  // Clique num passo alterna estado
-  const firstStep = steps[0];
-  const wasOn = firstStep.classList.contains('on') || firstStep.classList.contains('drum-on');
-  firstStep.dispatchEvent(new window.Event('pointerdown', {bubbles:true}));
-  const isOnNow = firstStep.classList.contains('on') || firstStep.classList.contains('drum-on');
-  assert(isOnNow !== wasOn, 'clicar num passo alterna o estado');
-
-  section('Transporte');
-  window.document.querySelector('#btnPlay').click();
-  assert(window.USBSequencer.isPlaying(), 'botão Tocar inicia sequenciador');
-  window.document.querySelector('#btnPlay').click();
-  assert(!window.USBSequencer.isPlaying(), 'botão Parar para sequenciador');
+  section('Panic');
   window.document.querySelector('#btnPanic').click();
   assert(true, 'Panic não lança erro');
-  window.document.querySelector('#btnRandomAll').click();
-  assert(true, 'Variar tudo não lança erro');
-  window.document.querySelector('#btnRandomSeq').click();
-  assert(true, 'Padrão aleatório não lança erro');
-  window.document.querySelector('#btnClearSeq').click();
-  assert(window.document.querySelectorAll('.seq-step.on, .seq-step.drum-on').length === 0 || window.USBSequencer.getState(), 'Limpar não lança erro');
 
-  section('Arpegiador (UI)');
-  const arpCb = window.document.querySelector('#arpEnable');
-  arpCb.checked = true; fire(window, arpCb, 'change');
-  assert(window.USBArpeggiator.isEnabled(), 'checkbox ativa arpegiador');
-  arpCb.checked = false; fire(window, arpCb, 'change');
-  assert(!window.USBArpeggiator.isEnabled(), 'checkbox desativa arpegiador');
-  const rate = window.document.querySelector('#arpRate');
-  rate.value = '250'; fire(window, rate, 'input');
-  assert(window.USBArpeggiator.getState().rate === 0.25, 'slider de velocidade aplica rate 0.25s');
+
 
   section('Gamepad API simulada');
   const pad = {
@@ -189,12 +155,12 @@ window.dispatchEvent(ev);
   pad.buttons[0].value = 0;
   await new Promise(r=>setTimeout(r,80));
   assert(true, 'botão de nota premido/solto processado sem erros');
-  // Botão 9 (Options) liga o arpegiador
-  pad.buttons[9].value = 1;
+  // Botão 8 (panic no perfil genérico): sem erros
+  pad.buttons[8].value = 1;
   await new Promise(r=>setTimeout(r,80));
-  pad.buttons[9].value = 0;
+  pad.buttons[8].value = 0;
   await new Promise(r=>setTimeout(r,60));
-  assert(window.USBArpeggiator.isEnabled(), 'Options liga o arpegiador');
+  assert(true, 'botão de panic processado sem erros');
   // Eixo 0 (stick esq.) = pitch bend: sem erros
   pad.axes[0] = 0.7;
   await new Promise(r=>setTimeout(r,80));

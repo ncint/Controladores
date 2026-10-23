@@ -36,8 +36,6 @@ function assert(cond, msg) {
 function section(name) { console.log('\n== ' + name + ' =='); }
 
 const USBSynth = loadModule('synth.js', 'USBSynth');
-const USBSequencer = loadModule('sequencer.js', 'USBSequencer');
-const USBArpeggiator = loadModule('arpeggiator.js', 'USBArpeggiator');
 const USBPresets = loadModule('presets.js', 'USBPresets');
 const USBMapping = loadModule('mapping.js', 'USBMapping');
 const USBEngine = loadModule('engine.js', 'USBEngine');
@@ -50,63 +48,6 @@ assert(USBSynth.getBus('lead') === undefined || USBSynth.getBus('lead') === null
 assert(typeof USBSynth.panic === 'function', 'panic existe (não lança sem ctx)');
 USBSynth.panic();
 
-section('USBSequencer');
-assert(USBSequencer.STEPS === 16, '16 passos');
-assert(USBSequencer.getBpm() === 120, 'BPM inicial 120');
-USBSequencer.setBpm(999); assert(USBSequencer.getBpm() === 300, 'BPM limitado a 300');
-USBSequencer.setBpm(10); assert(USBSequencer.getBpm() === 30, 'BPM mínimo 30');
-USBSequencer.setBpm(120);
-assert(!USBSequencer.isPlaying(), 'parado no início');
-USBSequencer.ensureTrack('lead', 'melodic');
-USBSequencer.setStep('lead', 0, 1, 60, 0.8);
-let st = USBSequencer.getState();
-assert(st.tracks.lead.steps[0] === 1, 'setStep ativa passo');
-assert(st.tracks.lead.notes[0] === 60, 'setStep grava nota');
-USBSequencer.setStep('lead', 0, 0);
-st = USBSequencer.getState();
-assert(st.tracks.lead.steps[0] === 0, 'setStep desativa passo');
-USBSequencer.randomizeTrack('lead', 1.0, [0, 3, 5], 1);
-st = USBSequencer.getState();
-assert(st.tracks.lead.steps.every(s => s === 1), 'randomizeTrack densidade 1 preenche tudo');
-assert(st.tracks.lead.notes.every(n => n === 48 || n === 51 || n === 53), 'notas aleatórias respeitam escala (C penta menor)');
-USBSequencer.clearTrack('lead');
-st = USBSequencer.getState();
-assert(st.tracks.lead.steps.every(s => s === 0), 'clearTrack limpa');
-USBSequencer.setDrumStep('drums', 4, 'kick', true, 0.9);
-st = USBSequencer.getState();
-assert(st.tracks.drums.steps[4] === 1 && st.tracks.drums.notes[4] === 'kick', 'setDrumStep grava kick');
-assert(USBSequencer.toggleMute('drums') === true, 'toggleMute liga mute');
-assert(USBSequencer.isMuted('drums'), 'isMuted reflete estado');
-assert(USBSequencer.toggleMute('drums') === false, 'toggleMute desliga mute');
-USBSequencer.setStep('lead', 20, 1);
-st = USBSequencer.getState();
-assert(st.tracks.lead.steps.length === 16 && st.tracks.lead.steps[15] === 0, 'passo fora dos limites ignorado');
-// play/stop sem AudioContext não deve lançar
-let threw = false;
-try { USBSequencer.play(); } catch (e) { threw = true; }
-assert(!threw, 'play sem AudioContext não lança erro');
-
-section('USBArpeggiator');
-assert(USBArpeggiator.PATTERNS.length >= 6, 'padrões disponíveis: ' + USBArpeggiator.PATTERNS.join(','));
-assert(!USBArpeggiator.isEnabled(), 'arpegiador desligado inicialmente');
-assert(USBArpeggiator.toggle() === true, 'toggle liga');
-assert(USBArpeggiator.isEnabled(), 'isEnabled true');
-assert(USBArpeggiator.toggle() === false, 'toggle desliga');
-USBArpeggiator.setPattern('randomWalk');
-assert(USBArpeggiator.getPattern() === 'randomWalk', 'setPattern randomWalk');
-USBArpeggiator.setPattern('não-existe');
-assert(USBArpeggiator.getPattern() === 'randomWalk', 'padrão inválido ignorado');
-USBArpeggiator.holdNotes([60, 64, 67]);
-USBArpeggiator.setRate(0.06); assert(USBArpeggiator.getState().rate === 0.06, 'setRate aplicado');
-USBArpeggiator.setRate(0.01); assert(USBArpeggiator.getState().rate === 0.04, 'rate mínimo 0.04s');
-USBArpeggiator.setOctaves(9); assert(USBArpeggiator.getState().octaves === 4, 'oitavas máximo 4');
-const as = USBArpeggiator.getState();
-assert(as.hold === false, 'hold desligado por omissão');
-// toggle liga mas sem ctx não deve lançar
-threw = false;
-try { USBArpeggiator.toggle(); } catch (e) { threw = true; }
-assert(!threw, 'arpegiador sem AudioContext não lança');
-USBArpeggiator.toggle();
 
 section('USBPresets');
 assert(USBPresets.names().length >= 5, 'presets: ' + USBPresets.names().join(', '));
@@ -118,22 +59,12 @@ Object.keys(USBPresets.PRESETS).forEach(name => {
   });
   assert(ok, `preset "${name}" tem 3 arrays de 16 elementos por pista`);
 });
-let ok = USBPresets.applyPreset('Techno', USBSequencer, USBArpeggiator);
-assert(ok === true, 'applyPreset aplica "Techno"');
-st = USBSequencer.getState();
-assert(st.bpm === 128, 'preset define BPM 128');
-assert(Object.keys(st.tracks).length === 3, 'preset Techno tem 3 pistas');
-assert(st.playing === false, 'preset deixa sequenciador parado');
-assert(USBPresets.applyPreset('Inexistente', USBSequencer) === false, 'preset inexistente devolve false');
-const rp = USBPresets.randomPattern([0, 2, 4], 48, 1, 16);
-assert(rp.steps.length === 16, 'randomPattern gera 16 passos');
-assert(rp.notes.every(n => [48, 50, 52, 60, 62, 64].includes(n)), 'randomPattern usa escala dada');
 assert(USBPresets.noteName(60) === 'C4', 'noteName C4');
 assert(USBPresets.noteName(69) === 'A4', 'noteName A4');
 
 section('USBMapping');
 const acts = Object.keys(USBMapping.ACTIONS);
-assert(acts.length >= 20, 'ações disponíveis: ' + acts.length);
+assert(acts.length >= 12, 'ações disponíveis: ' + acts.length);
 assert(acts.includes('sustain') && acts.includes('pitchBend'), 'ações de performance: sustain e pitchBend');
 acts.forEach(a => assert(!!USBMapping.ACTIONS[a].label && !!USBMapping.ACTIONS[a].type, `ação ${a} tem label e tipo`));
 USBMapping.resetToDefault();
