@@ -143,6 +143,12 @@ const USBMapping = (() => {
     return 'generic';
   }
 
+  // Ordem de performance SNES: uma oitava da escala no cursor + face,
+// tal como um instrumento: esquerda, cima, direita, baixo, Y, X, botão 6, B,
+// depois os restantes botões por índice.
+// D-pad como botões: 14=esq, 12=cima, 15=dir, 13=baixo. Face standard: 0=B, 1=A, 2=Y, 3=X.
+  const SNES_NOTE_ORDER = [14, 12, 15, 13, 2, 3, 6, 0];
+
   function profileFor(padIndex, padId, buttonCount, axisCount) {
     const cfg = state.pads[padIndex];
     if (cfg && cfg.bindings && cfg.bindings.length) return cfg;
@@ -150,11 +156,19 @@ const USBMapping = (() => {
     const profile = PROFILES[key];
     let bindings = JSON.parse(JSON.stringify(profile.bindings));
     if (key === 'snes') {
-      // Todos os botões tocam notas, apenas os que existem no comando.
+      // Todos os botões tocam notas: uma oitava na ordem de performance,
+      // depois os restantes botões por índice.
       bindings = [];
       const n = Math.min(buttonCount || 16, 16);
+      const order = SNES_NOTE_ORDER.slice();
       for (let b = 0; b < n; b++) {
-        bindings.push({ type: 'button', index: b, action: 'note', param: b });
+        if (!order.includes(b)) order.push(b);
+      }
+      let degree = 0;
+      for (const b of order) {
+        if (b < n) {
+          bindings.push({ type: 'button', index: b, action: 'note', param: degree++ });
+        }
       }
       // Eixos (se o adaptador reportar d-pad como eixos): X = pitch bend, Y = cutoff
       const ax = Math.min(axisCount || 0, 2);

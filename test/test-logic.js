@@ -193,6 +193,26 @@ const snesNotes = snesCfg.bindings.filter(b => b.action === 'note' && b.type ===
 assert(snesNotes.length === 10, 'TODOS os 10 botões do SNES tocam notas');
 assert(snesCfg.bindings.every(b => b.action === 'note' || b.action === 'pitchBend' || b.action === 'cutoff'), 'perfil SNES: só notas e eixos de expressão');
 assert(snesCfg.bindings.filter(b => b.type === 'axis').length === 2, 'eixos do SNES mapeados (pitch bend + cutoff)');
+// Ordem de performance: cursor esq,cima,dir,baixo (14,12,15,13) = graus 0-3; Y(2)=4; X(3)=5; botão 6=6; B(0)=7 (oitava)
+// Testada num comando de 16 botões (com D-pad como botões)
+const snesCfg3 = USBMapping.profileFor(8, 'Retro SNES 16btn', 16, 0);
+const deg = (idx) => snesCfg3.bindings.find(b => b.type === 'button' && b.index === idx).param;
+assert(deg(14) === 0, 'cursor esquerda = grau 0 (1ª nota)');
+assert(deg(12) === 1, 'cursor cima = grau 1 (2ª nota)');
+assert(deg(15) === 2, 'cursor direita = grau 2 (3ª nota)');
+assert(deg(13) === 3, 'cursor baixo = grau 3 (4ª nota)');
+assert(deg(2) === 4, 'Y = grau 4 (5ª nota)');
+assert(deg(3) === 5, 'X = grau 5 (6ª nota)');
+assert(deg(6) === 6, 'botão 6 = grau 6 (7ª nota)');
+assert(deg(0) === 7, 'B = grau 7 (oitava)');
+// Numa escala de 7 graus por oitava, grau 7 = uma oitava acima da fundamental
+assert(USBEngine.degreeToMidi('lead', 7) === USBEngine.degreeToMidi('lead', 0) + 12, 'grau 7 é a oitava da fundamental');
+// Restantes botões por índice, graus 8+
+const rest = snesCfg3.bindings.filter(b => b.type === 'button' && ![14,12,15,13,2,3,6,0].includes(b.index));
+assert(rest.every(b => b.param >= 8), 'botões restantes continuam nos graus 8+');
+// Num comando de 10 botões (sem D-pad como botões), a oitava começa no cursor ou no Y conforme existam
+const deg10 = (idx) => { const b = snesCfg.bindings.find(x => x.type === 'button' && x.index === idx); return b ? b.param : null; };
+assert(deg10(2) === 0 && deg10(3) === 1 && deg10(6) === 2 && deg10(0) === 3, 'SNES 10 botões (sem D-pad): Y,X,6,B = graus 0-3');
 const snesCfg2 = USBMapping.profileFor(7, '8BitDo SNES Retro', 16, 0);
 assert(snesCfg2.bindings.filter(b => b.type === 'button').length === 16, 'SNES com 16 botões: todos tocam notas');
 assert(snesCfg2.bindings.filter(b => b.type === 'axis').length === 0, 'SNES sem eixos: nenhum binding de eixo');

@@ -62,14 +62,22 @@ Como os graus estão em escala, **qualquer combinação de botões soa bem** —
 
 #### Comandos SNES / retro (sem sticks)
 
-Adaptadores SNES USB (e comandos retro em geral) recebem um perfil próprio, detetado automaticamente pelo ID do dispositivo ou pela heurística (poucos botões, sem sticks). Neste perfil, **todos os botões tocam notas** — graus consecutivos da escala, adaptados ao número de botões que o comando reportar:
+Adaptadores SNES USB (e comandos retro em geral) recebem um perfil próprio, detetado automaticamente pelo ID do dispositivo ou pela heurística (poucos botões, sem sticks). Neste perfil, **todos os botões tocam notas** — uma **oitava completa da escala** disposta como um instrumento:
 
-| Controlo | Ação |
-|---|---|
-| Todos os botões (A B X Y, ombros, Select, Start, D-pad se for botões) | Notas — graus consecutivos (fundamental, 2ª, 3ª, … ) |
-| D-pad (se o adaptador o reportar como eixos) | Pitch bend (X) / Cutoff do filtro (Y) |
+| Ordem | Controlo | Grau | Nota (dó menor) |
+|---|---|---|---|
+| 1 | ← (cursor esquerda) | fundamental | dó |
+| 2 | ↑ (cursor cima) | 2ª | ré |
+| 3 | → (cursor direita) | 3ª menor | mib |
+| 4 | ↓ (cursor baixo) | 4ª | fá |
+| 5 | Y | 5ª | sol |
+| 6 | X | 6ª menor | láb |
+| 7 | botão 6 (ombro) | 7ª menor | sib |
+| 8 | B | **oitava** | dó |
 
-Como os graus estão em escala, **qualquer combinação de botões soa bem** e podes premir vários ao mesmo tempo (polifonia). O comando torna-se um teclado: os botões de face são as notas graves, os ombros e Select/Start as médias/altas.
+Os restantes botões (A, ombro 7, Select, Start…) continuam a escala nos graus seguintes. Se o adaptador reportar o cursor como **eixos** em vez de botões, esses eixos ficam para **pitch bend** (X) e **cutoff** do filtro (Y), e a oitava começa no Y.
+
+Como os graus estão em escala, **qualquer combinação de botões soa bem** e podes premir vários ao mesmo tempo (polifonia).
 
 > Os índices de botões variam entre adaptadores e navegadores. Se um botão não fizer o esperado, usa o modo Aprender para o remapear — escolhe a ação “Nota (grau da escala)” e prime o botão; ele recebe automaticamente o próximo grau livre. Fica guardado no navegador.
 
