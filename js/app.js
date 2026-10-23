@@ -277,7 +277,8 @@
         code.textContent = (b.type === 'button' ? 'B' : 'Eixo') + b.index;
         row.appendChild(code);
         const lbl = document.createElement('span');
-        lbl.textContent = meta ? meta.label : b.action;
+        const midi = b.action === 'note' ? USBEngine.degreeToMidi(padCfg.role, b.param || 0) : null;
+        lbl.textContent = (meta ? meta.label : b.action) + (midi !== null ? ` (${USBPresets.noteName(midi)})` : '');
         row.appendChild(lbl);
         const rm = document.createElement('button');
         rm.className = 'btn small danger';
@@ -348,6 +349,24 @@
       if (USBGamepads.count() && $('#padsList').querySelector('.empty')) refreshPads();
     }, 2000);
   }
+
+  const KB_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'w', 'e', 't', 'y', 'u'];
+  const kbDown = {};
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat || !started) return;
+    const i = KB_KEYS.indexOf(e.key.toLowerCase());
+    if (i < 0 || kbDown[i]) return;
+    e.preventDefault();
+    kbDown[i] = true;
+    const midi = USBEngine.degreeToMidi('lead', i);
+    const bus = USBSynth.getBus('lead');
+    if (bus) USBSynth.triggerVoice(bus, USBSynth.noteToFreq(midi), undefined, undefined, 0.9);
+    flash('🎹 ' + USBPresets.noteName(midi));
+  });
+  window.addEventListener('keyup', (e) => {
+    const i = KB_KEYS.indexOf(e.key.toLowerCase());
+    if (i >= 0) kbDown[i] = false;
+  });
 
   window.addEventListener('error', (e) => {
     console.error('Erro:', e.message);

@@ -31,25 +31,36 @@ Liga comandos USB (DualShock 3, comandos Nintendo antigos, genéricos...) ao com
 1. Abre a aplicação no navegador (ver [Publicação](#-publicação-no-github-pages) abaixo).
 2. Liga os comandos USB ao computador.
 3. Clica em **"▶ Ativar som e começar"** (os navegadores exigem uma interação antes de reproduzir áudio).
-4. Escolhe um **preset** no topo (ex.: Techno) e prime **▶ Tocar** — já há som.
-5. Prime botões/mexe eixos nos comandos: o eixo esquerdo toca notas, Start liga o sequenciador, Select gera variações.
+4. **Toca já**: prime os botões do comando — cada um é uma nota (estão em escala, tudo soa bem). O stick esquerdo faz pitch bend e abre/fecha o filtro.
+5. Para um fundo rítmico, escolhe um **preset** no topo (ex.: Techno) e prime **▶ Tocar** no sequenciador.
 6. Explora: muda padrões na grelha, ajusta o sintetizador por bus, ativa o arpegiador, ou abre **"Mapeamento dos comandos"** para atribuir funções com o modo Aprender.
 
-### Mapeamento predefinido (exemplo genérico)
+### Mapeamento predefinido — modo performance (controlador MIDI)
 
-| Controlo | Ação |
+O comando funciona como um **controlador MIDI**: cada botão é uma nota da escala, os sticks são expressão em tempo real.
+
+| Controlo | Ação (graus da escala menor natural em dó) |
 |---|---|
-| Eixo esquerdo (X) | Tocar nota quantizada na escala |
-| Eixo esquerdo (Y) | Frequência do filtro |
-| ✕/A (botão 0) | Alternar passo atual do sequenciador |
-| ○/B (botão 1) | Padrão aleatório |
-| □/X (botão 2) | Limpar pista |
-| △/Y (botão 3) | Mute pista |
-| L1/R1 | Oitava − / + |
-| Start (botão 9) | Play / Stop |
-| Select (botão 8) | Variar tudo |
+| ✕ (botão 0) | Nota — fundamental (dó) |
+| ○ (botão 1) | Nota — 3ª menor (mib) |
+| □ (botão 2) | Nota — 4ª (fá) |
+| △ (botão 3) | Nota — 5ª (sol) |
+| D-pad ↑ ↓ ← → | Notas — graus altos da escala |
+| R2 (botão 7) | Nota aguda adicional |
+| L2 (botão 6) | **Sustain** — notas continuam enquanto premido |
+| L1 / R1 | Oitava − / + (transpõe o comando inteiro) |
+| Options (botão 9) | Ligar/desligar arpejo (as notas passam para o arpegiador) |
+| Share (botão 8) | **Panic** — silencia tudo |
+| Stick esq. X | **Pitch bend** (±2 semitons, aplica-se às notas held) |
+| Stick esq. Y | Filtro: frequência (cutoff) |
+| Stick dir. X | Filtro: ressonância |
+| Stick dir. Y | Delay: quantidade |
 
-> Os índices de botões variam entre comandos e navegadores. Se um botão não fizer o esperado, usa o modo Aprender para o remapear — fica guardado no navegador.
+Como os graus estão em escala, **qualquer combinação de botões soa bem** — podes premir vários ao mesmo tempo (polifonia). Cada comando pode ter uma função própria (lead, bass, chords, drums) para tocar em conjunto: muda a função no painel “Mapeamento dos comandos”.
+
+**Sem comando USB?** As teclas `A S D F G H J K L` do teclado tocam as notas da escala (dó menor), a partir do momento em que ativas o som.
+
+> Os índices de botões variam entre comandos e navegadores. Se um botão não fizer o esperado, usa o modo Aprender para o remapear — escolhe a ação “Nota (grau da escala)” e prime o botão; ele recebe automaticamente o próximo grau livre. Fica guardado no navegador.
 
 ## Publicação no GitHub Pages
 

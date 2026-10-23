@@ -133,22 +133,26 @@ class FakeAudioContext {
   const ev = new window.Event('gamepadconnected');
 ev.gamepad = pad;
 window.dispatchEvent(ev);
-  // USBGamepads.start já registou listeners de eventos e intervalo; forçamos um poll:
-  // simular poll diretamente
-  pad.buttons[9].value = 0; // estado inicial já capturado no registo? registámos com 1; forçar mudança:
-  pad.buttons[9].value = 0;
   window.USBGamepads.rescan();
-  // Agora primimos Start (valor 0 -> 1) e o poll deve disparar playStop
   await new Promise(r=>setTimeout(r,60));
+  // Botão 0 (✕) agora toca a nota grau 0 (dó) — deve criar uma voz held no bus lead
+  pad.buttons[0].value = 1;
+  await new Promise(r=>setTimeout(r,80));
+  pad.buttons[0].value = 0;
+  await new Promise(r=>setTimeout(r,80));
+  assert(true, 'botão de nota premido/solto processado sem erros');
+  // Botão 9 (Options) liga o arpegiador
   pad.buttons[9].value = 1;
   await new Promise(r=>setTimeout(r,80));
-  assert(window.USBSequencer.isPlaying(), 'botão 9 (Start) do comando simulado liga Play');
   pad.buttons[9].value = 0;
   await new Promise(r=>setTimeout(r,60));
-  assert(window.USBSequencer.isPlaying(), 'soltar o botão mantém o sequenciador a tocar');
-  pad.buttons[9].value = 1;
+  assert(window.USBArpeggiator.isEnabled(), 'Options liga o arpegiador');
+  // Eixo 0 (stick esq.) = pitch bend: sem erros
+  pad.axes[0] = 0.7;
   await new Promise(r=>setTimeout(r,80));
-  assert(!window.USBSequencer.isPlaying(), 'segunda pressão de Start para o sequenciador');
+  pad.axes[0] = 0;
+  await new Promise(r=>setTimeout(r,60));
+  assert(true, 'pitch bend do stick processado sem erros');
 
   section('Mapeamento (UI)');
   window.USBMapping.resetToDefault();

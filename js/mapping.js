@@ -4,7 +4,9 @@ const USBMapping = (() => {
   // Ações que um comando pode controlar.
   const ACTIONS = {
     'playStop': { label: 'Play / Stop', type: 'trigger' },
-    'note': { label: 'Nota (toque direto)', type: 'note' },
+    'note': { label: 'Nota (grau da escala)', type: 'note', paramLabel: 'grau' },
+    'sustain': { label: 'Sustain (notas continuam enquanto premido)', type: 'sustain' },
+    'pitchBend': { label: 'Pitch bend (eixo)', type: 'bend' },
     'arpHold': { label: 'Arpejo: manter notas', type: 'note', arp: true },
     'arpToggle': { label: 'Arpejo: ligar/desligar', type: 'trigger' },
     'arpPatternNext': { label: 'Arpejo: próximo padrão', type: 'trigger' },
@@ -28,23 +30,38 @@ const USBMapping = (() => {
     'octaveDown': { label: 'Oitava −', type: 'trigger' },
   };
 
-  // Mapeamento predefinido genérico (índices standard da Gamepad API).
+  // Mapeamento predefinido de performance: botões = notas, sticks = expressão.
+  // Índices "standard" da Gamepad API: 0-3 face, 4-5 ombros, 6-7 gatilhos,
+  // 8-9 share/options, 10-11 stick clicks, 12-15 d-pad. Eixos 0-1 stick esq., 2-3 dir.
   const DEFAULT = {
     bindAllPads: true,
     pads: {
       0: {
         role: 'lead',
         bindings: [
-          { type: 'button', index: 0, action: 'seqStepToggle' },
-          { type: 'button', index: 1, action: 'seqRandomTrack' },
-          { type: 'button', index: 2, action: 'seqClearTrack' },
-          { type: 'button', index: 3, action: 'seqMuteTrack' },
-          { type: 'button', index: 9, action: 'playStop' },
-          { type: 'button', index: 8, action: 'randomizeAll' },
+          // ✕ ○ □ △ = acorde/scale degrees
+          { type: 'button', index: 0, action: 'note', param: 0 },
+          { type: 'button', index: 1, action: 'note', param: 2 },
+          { type: 'button', index: 2, action: 'note', param: 4 },
+          { type: 'button', index: 3, action: 'note', param: 6 },
+          // D-pad = notas mais altas
+          { type: 'button', index: 12, action: 'note', param: 7 },
+          { type: 'button', index: 13, action: 'note', param: 1 },
+          { type: 'button', index: 14, action: 'note', param: 3 },
+          { type: 'button', index: 15, action: 'note', param: 5 },
+          // Ombros = mudar oitava, gatilhos = sustain e nota aguda
           { type: 'button', index: 4, action: 'octaveDown' },
           { type: 'button', index: 5, action: 'octaveUp' },
-          { type: 'axis', index: 0, action: 'note' },
+          { type: 'button', index: 6, action: 'sustain' },
+          { type: 'button', index: 7, action: 'note', param: 9 },
+          // Share/Options
+          { type: 'button', index: 8, action: 'panic' },
+          { type: 'button', index: 9, action: 'arpToggle' },
+          // Sticks = expressão
+          { type: 'axis', index: 0, action: 'pitchBend' },
           { type: 'axis', index: 1, action: 'cutoff' },
+          { type: 'axis', index: 2, action: 'resonance' },
+          { type: 'axis', index: 3, action: 'delayMix' },
         ],
       },
     },
@@ -83,7 +100,7 @@ const USBMapping = (() => {
     return state.pads[padIndex] || null;
   }
 
-  function setBinding(padIndex, type, controlIndex, action, role) {
+  function setBinding(padIndex, type, controlIndex, action, role, param) {
     if (!state.pads[padIndex]) {
       state.pads[padIndex] = { role: role || 'lead', bindings: [] };
     }
@@ -91,9 +108,20 @@ const USBMapping = (() => {
     const pad = state.pads[padIndex];
     pad.bindings = pad.bindings.filter(b => !(b.type === type && b.index === controlIndex));
     if (action !== null) {
-      pad.bindings.push({ type, index: controlIndex, action });
+      const b = { type, index: controlIndex, action };
+      if (param !== undefined && param !== null) b.param = param;
+      pad.bindings.push(b);
     }
     save();
+  }
+
+  function nextFreeDegree(padIndex) {
+    const pad = state.pads[padIndex];
+    if (!pad) return 0;
+    const used = pad.bindings.filter(b => b.action === 'note').map(b => b.param || 0);
+    let d = 0;
+    while (used.includes(d) && d < 24) d++;
+    return d;
   }
 
   function clearBindings(padIndex) {
@@ -126,8 +154,10 @@ const USBMapping = (() => {
       (change.type === 'button' && change.value > 0.5) ||
       (change.type === 'axis' && Math.abs(change.value) > 0.5);
     if (!significant) return false;
-    setBinding(padIndex, change.type, change.index, action);
-    const info = { padIndex, action, type: change.type, index: change.index };
+    let param;
+    if (action === 'note') param = nextFreeDegree(padIndex);
+    setBinding(padIndex, change.type, change.index, action, null, param);
+    const info = { padIndex, action, type: change.type, index: change.index, param };
     learning = null;
     listeners.learn.forEach(cb => { try { cb(info); } catch (e) {} });
     return true;
@@ -142,7 +172,7 @@ const USBMapping = (() => {
   return {
     ACTIONS, DEFAULT, getPadConfig, setBinding, clearBindings, resetToDefault,
     save, load, onLearn, startLearn, stopLearn, isLearning, feedLearn,
-    getState, setState,
+    getState, setState, nextFreeDegree,
   };
 })();
 

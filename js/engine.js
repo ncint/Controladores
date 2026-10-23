@@ -1,18 +1,16 @@
 const USBEngine = (() => {
   const BUS_ROLES = ['lead', 'bass', 'chords', 'drums'];
   const WAVES = ['sine', 'triangle', 'square', 'sawtooth'];
-  const NOTE_ROLES = {
-    lead: { root: 60, scale: [0, 2, 3, 5, 7, 8, 10], octaves: 2 },
-    bass: { root: 36, scale: [0, 3, 5, 7, 10], octaves: 1 },
-    chords: { root: 55, scale: [0, 2, 4, 5, 7, 9, 11], octaves: 2 },
-  };
+  const SCALE = [0, 2, 3, 5, 7, 8, 10];
+  const ROLE_ROOTS = { lead: 60, bass: 36, chords: 55 };
+  const roleOctaves = { lead: 0, bass: 0, chords: 0 };
+  let lastPadPress = {};
 
   let started = false;
-  const heldNotes = {};
+  const heldVoices = {};
   const arpHoldNotes = {};
-  const noteZones = {};
-  const activeRange = {};
-  let currentPresetIndex = 0;
+  let sustainOn = {};
+  let pitchBend = 0;
   const onActivity = [];
 
   function init() {
@@ -31,64 +29,64 @@ const USBEngine = (() => {
     onActivity.forEach(cb => { try { cb(padIndex, action, value); } catch (e) {} });
   }
 
-  function quantizeAxis(value, role, invert) {
-    const cfg = NOTE_ROLES[role] || NOTE_ROLES.lead;
-    const scale = cfg.scale;
-    const span = cfg.octaves * 12;
-    let v = (value + 1) / 2;
-    if (invert) v = 1 - v;
-    const idx = Math.round(v * (scale.length * cfg.octaves - 1));
-    const oct = Math.floor(idx / scale.length);
-    const deg = idx % scale.length;
-    return cfg.root + oct * 12 + scale[deg];
+  function rootFor(role) {
+    return (ROLE_ROOTS[role] || 60);
   }
 
-  function noteFromZone(padIndex, role, value, invert) {
-    const cfg = NOTE_ROLES[role] || NOTE_ROLES.lead;
-    const zoneId = padIndex + ':' + role;
-    const scale = cfg.scale;
-    const stepsN = scale.length * cfg.octaves;
-    let v = (value + 1) / 2;
-    if (invert) v = 1 - v;
-    const idx = Math.min(stepsN - 1, Math.floor(v * stepsN));
-    const oct = Math.floor(idx / scale.length);
-    const deg = idx % scale.length;
-    noteZones[zoneId] = idx;
-    return cfg.root + oct * 12 + scale[deg];
+  function degreeToMidi(role, degree) {
+    const root = rootFor(role);
+    const d = Math.max(0, degree | 0);
+    const oct = Math.floor(d / SCALE.length);
+    const deg = SCALE[d % SCALE.length];
+    return root + oct * 12 + deg + (roleOctaves[role] || 0);
   }
 
-  function playNote(padIndex, role, midi, velocity) {
+  function voiceKey(padIndex, role, controlIndex) {
+    return padIndex + ':' + role + ':' + controlIndex;
+  }
+
+  function startVoice(padIndex, role, controlIndex, midi, velocity) {
     const bus = USBSynth.getBus(role);
-    if (!bus) return;
-    const key = padIndex + ':' + role;
-    const existing = heldNotes[key];
-    if (existing && existing.freq === USBSynth.noteToFreq(midi)) return;
-    if (existing) existing.stop();
-    const voice = USBSynth.triggerVoice(bus, USBSynth.noteToFreq(midi), undefined, undefined, velocity || 0.9);
-    if (voice) heldNotes[key] = voice;
-    emitActivity(padIndex, 'note', midi);
+    if (!bus) return null;
+    const key = voiceKey(padIndex, role, controlIndex);
+    const existing = heldVoices[key];
+    if (existing) { existing.stop(); delete heldVoices[key]; }
+    const freq = USBSynth.noteToFreq(midi) * Math.pow(2, pitchBend / 12);
+    const voice = USBSynth.triggerVoice(bus, freq, undefined, undefined, velocity || 0.9);
+    if (voice) {
+      heldVoices[key] = voice;
+      voice.midi = midi;
+    }
+    return voice;
   }
 
-  function releaseNote(padIndex, role) {
-    const key = padIndex + ':' + role;
-    if (heldNotes[key]) {
-      heldNotes[key].stop();
-      delete heldNotes[key];
+  function stopVoice(padIndex, role, controlIndex) {
+    const key = voiceKey(padIndex, role, controlIndex);
+    if (heldVoices[key]) {
+      heldVoices[key].stop();
+      delete heldVoices[key];
     }
   }
 
+  function applyPitchBendToHeld() {
+    if (!USBSynth.context()) return;
+    Object.values(heldVoices).forEach(v => {
+      try {
+        const f = USBSynth.noteToFreq(v.midi) * Math.pow(2, pitchBend / 12);
+        v.osc.frequency.setTargetAtTime(f, USBSynth.context().currentTime, 0.01);
+        v.osc2.frequency.setTargetAtTime(f, USBSynth.context().currentTime, 0.01);
+      } catch (e) {}
+    });
+  }
+
   function arpAddNote(padIndex, midi) {
-    const key = padIndex + ':arp';
-    arpHoldNotes[key] = midi;
-    const notes = Object.values(arpHoldNotes);
-    USBArpeggiator.holdNotes(notes);
+    arpHoldNotes[padIndex + ':arp'] = midi;
+    USBArpeggiator.holdNotes(Object.values(arpHoldNotes));
   }
 
   function arpRemoveNote(padIndex) {
-    const key = padIndex + ':arp';
-    delete arpHoldNotes[key];
-    const notes = Object.values(arpHoldNotes);
-    USBArpeggiator.holdNotes(notes);
+    delete arpHoldNotes[padIndex + ':arp'];
+    USBArpeggiator.holdNotes(Object.values(arpHoldNotes));
   }
 
   function applyRangeAction(role, action, value) {
@@ -96,16 +94,21 @@ const USBEngine = (() => {
     if (!bus) return;
     const cfg = USBMapping.ACTIONS[action];
     if (!cfg || cfg.type !== 'range') return;
-    const v = value >= 0 ? value : -value;
+    const v = Math.abs(value);
     const scaled = cfg.min + v * (cfg.max - cfg.min);
     USBSynth.applyParams(bus, { [action]: scaled });
   }
 
+  let currentPresetIndex = 0;
+  let lastPresetName = null;
+
   function nextPreset(seq, arp) {
     const names = USBPresets.names();
-    currentPresetIndex = (currentPresetIndex + 1) % names.length;
-    USBPresets.applyPreset(names[currentPresetIndex], seq, arp);
-    return names[currentPresetIndex];
+    const idx = names.indexOf(lastPresetName || '');
+    currentPresetIndex = (idx >= 0 ? idx + 1 : 0) % names.length;
+    lastPresetName = names[currentPresetIndex];
+    USBPresets.applyPreset(lastPresetName, seq, arp);
+    return lastPresetName;
   }
 
   function randomizeAll(seq, arp) {
@@ -131,17 +134,25 @@ const USBEngine = (() => {
     const padCfg = USBMapping.getPadConfig(change.padIndex);
     if (!padCfg) return false;
     const role = padCfg.role;
-    let binding = padCfg.bindings.find(b => b.type === change.type && b.index === change.index);
+    const binding = padCfg.bindings.find(b => b.type === change.type && b.index === change.index);
     if (!binding) return false;
     const action = binding.action;
     const meta = USBMapping.ACTIONS[action];
     if (!meta) return false;
 
+    if (change.type === 'axis' && (meta.type === 'range' || meta.type === 'bend')) {
+      const debounceKey = change.padIndex + ':' + action;
+      const now = Date.now();
+      if (lastPadPress[debounceKey] && now - lastPadPress[debounceKey] < 20) return false;
+      lastPadPress[debounceKey] = now;
+    }
+
     if (meta.type === 'note') {
+      const degree = binding.param || 0;
+      const midi = degreeToMidi(role, degree);
       if (meta.arp) {
         if (change.type === 'axis') {
           if (Math.abs(change.value) > 0.15) {
-            const midi = quantizeAxis(change.value, role, false);
             arpAddNote(change.padIndex, midi);
             if (!arp.isEnabled()) arp.toggle();
           } else {
@@ -149,7 +160,7 @@ const USBEngine = (() => {
           }
         } else {
           if (change.value > 0.5) {
-            arpAddNote(change.padIndex, noteFromZone(change.padIndex, role, change.index, false));
+            arpAddNote(change.padIndex, midi);
             if (!arp.isEnabled()) arp.toggle();
           } else {
             arpRemoveNote(change.padIndex);
@@ -158,18 +169,48 @@ const USBEngine = (() => {
       } else {
         if (change.type === 'axis') {
           if (Math.abs(change.value) > 0.15) {
-            playNote(change.padIndex, role, quantizeAxis(change.value, role, false));
+            startVoice(change.padIndex, role, change.index, midi, Math.abs(change.value));
           } else {
-            releaseNote(change.padIndex, role);
+            stopVoice(change.padIndex, role, change.index);
           }
         } else {
           if (change.value > 0.5) {
-            playNote(change.padIndex, role, noteFromZone(change.padIndex, role, change.index, false));
-          } else {
-            releaseNote(change.padIndex, role);
+            startVoice(change.padIndex, role, change.index, midi, change.value);
+          } else if (!sustainOn[change.padIndex]) {
+            stopVoice(change.padIndex, role, change.index);
           }
         }
       }
+      emitActivity(change.padIndex, action, change.value);
+      return true;
+    }
+
+    if (meta.type === 'sustain') {
+      const pressed = change.value > 0.5;
+      sustainOn[change.padIndex] = pressed;
+      if (!pressed) {
+        const gp = navigator.getGamepads ? navigator.getGamepads() : [];
+        const raw = gp[change.padIndex];
+        if (raw) {
+          padCfg.bindings.forEach(b => {
+            if (b.action === 'note' && b.type === 'button') {
+              const btn = raw.buttons[b.index];
+              if (!btn || btn.value <= 0.5) stopVoice(change.padIndex, role, b.index);
+            }
+          });
+        } else {
+          Object.keys(heldVoices)
+            .filter(k => k.startsWith(change.padIndex + ':'))
+            .forEach(k => { heldVoices[k].stop(); delete heldVoices[k]; });
+        }
+      }
+      emitActivity(change.padIndex, action, change.value);
+      return true;
+    }
+
+    if (meta.type === 'bend') {
+      pitchBend = change.value * 2;
+      applyPitchBendToHeld();
       emitActivity(change.padIndex, action, change.value);
       return true;
     }
@@ -240,10 +281,8 @@ const USBEngine = (() => {
       case 'octaveUp':
       case 'octaveDown': {
         const dir = action === 'octaveUp' ? 12 : -12;
-        const cfg = NOTE_ROLES[role];
-        if (cfg) {
-          NOTE_ROLES[role].root = Math.min(96, Math.max(24, cfg.root + dir));
-        }
+        if (roleOctaves[role] === undefined) roleOctaves[role] = 0;
+        roleOctaves[role] = Math.min(36, Math.max(-24, roleOctaves[role] + dir));
         break;
       }
     }
@@ -251,7 +290,11 @@ const USBEngine = (() => {
     return true;
   }
 
-  return { init, handle, activity, BUS_ROLES, WAVES, NOTE_ROLES, quantizeAxis, randomizeAll, nextPreset };
+  return {
+    init, handle, activity, BUS_ROLES, WAVES,
+    degreeToMidi, randomizeAll, nextPreset,
+    roleOctaves,
+  };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = USBEngine;
