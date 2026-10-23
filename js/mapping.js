@@ -1,5 +1,5 @@
 const USBMapping = (() => {
-  const STORAGE_KEY = 'usb-orchestra-mappings-v5';
+  const STORAGE_KEY = 'usb-orchestra-mappings-v6';
 
   // Ações que um comando pode controlar.
   const ACTIONS = {
@@ -145,11 +145,15 @@ const USBMapping = (() => {
     return 'generic';
   }
 
-  // Ordem de performance SNES: uma oitava da escala no cursor + face,
-// tal como um instrumento: esquerda, cima, direita, baixo, Y, X, botão 6, B,
-// depois os restantes botões por índice.
-// D-pad como botões: 14=esq, 12=cima, 15=dir, 13=baixo. Face standard: 0=B, 1=A, 2=Y, 3=X.
-  const SNES_NOTE_ORDER = [14, 12, 15, 13, 2, 3, 6, 0];
+  // Ordem de performance SNES: uma oitava da escala no cursor + face.
+// Cursor (como eixos): esq, cima, dir, baixo = graus 0-3.
+// Botões: 3 = 5ª, 0 = 6ª, 1 = 7ª, 2 = oitava. Botões 4/5 reservados para
+// oitava abaixo/acima. Restantes botões continuam nos graus 8+.
+  const SNES_NOTE_ORDER = [14, 12, 15, 13, 3, 0, 1, 2];
+  const SNES_UTILITY_BUTTONS = [
+    { index: 4, action: 'octaveDown' },
+    { index: 5, action: 'octaveUp' },
+  ];
 
   function bindingsForProfile(key, buttonCount, axisCount) {
     if (key !== 'snes') return JSON.parse(JSON.stringify(PROFILES[key].bindings));
@@ -162,13 +166,18 @@ const USBMapping = (() => {
       bindings.push({ type: 'axis', index: 0, action: 'note', param: 2, dir: 1 });
       bindings.push({ type: 'axis', index: 1, action: 'note', param: 3, dir: 1 });
     }
+    // Botões utilitários: 4 = oitava abaixo, 5 = oitava acima
+    SNES_UTILITY_BUTTONS.forEach(u => {
+      if (u.index < n) bindings.push({ type: 'button', index: u.index, action: u.action });
+    });
+    const utilityIdx = SNES_UTILITY_BUTTONS.map(u => u.index);
     const order = SNES_NOTE_ORDER.slice();
     for (let b = 0; b < n; b++) {
-      if (!order.includes(b)) order.push(b);
+      if (!order.includes(b) && !utilityIdx.includes(b)) order.push(b);
     }
     let degree = dpadAsAxes ? 4 : 0;
     for (const b of order) {
-      if (b < n) {
+      if (b < n && !utilityIdx.includes(b)) {
         bindings.push({ type: 'button', index: b, action: 'note', param: degree++ });
       }
     }
