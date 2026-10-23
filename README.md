@@ -137,14 +137,13 @@ Escolhe o som **"TR-808 (meus samples)"** na voz drums de um comando. Na voz dru
 
 ## Amostras de bateria e licenças
 
-As amostras em `samples/*.wav` (kick, snare, hi-hats, clap, toms — kits 808 e 909) foram **geradas por síntese pelo próprio projeto** com `scripts/make-samples.js` (Node.js puro, sem dependências). São originais, sem restrições de redistribuição. Para regenerar: `node scripts/make-samples.js`.
+Os samples de bateria em `samples/custom/` são do pack TR-808 do utilizador do repositório. Os kits sintetizados gerados anteriormente foram removidos. O gerador (`scripts/make-samples.js`) já não faz parte do projeto.
 
 ## Arquitetura
 
 ```
 index.html          — interface
 css/style.css       — estilos
-samples/*.wav       — amostras de bateria (808/909)
 scripts/make-samples.js — gerador de amostras (Node puro)
 js/
   synth.js          — Web Audio API: osciladores, filtros, delay, reverb, distorção

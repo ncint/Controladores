@@ -230,10 +230,6 @@ const USBSynth = (() => {
 
   // ---------- Amostras de bateria ----------
   const KIT_MAP = {
-    '808':      { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
-    '909':      { kick: 'kick909.wav', snare: 'snare909.wav', hat: 'hatClosed909.wav', hatOpen: 'hatOpen909.wav', clap: 'clap909.wav', tomLow: 'tomLow909.wav', tomMid: 'tomMid909.wav', tomHigh: 'tomHigh909.wav' },
-    'acoustic': { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
-    'lofi':     { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
     'custom':   {
       kick: 'custom/TR808 BD Bass Drum Medium 02.wav',
       snare: 'custom/TR808 SD Snare Drum 048.wav',
@@ -250,21 +246,21 @@ const USBSynth = (() => {
     },
   };
 
-  let currentKit = { drums: '808' };
+  let currentKit = { drums: 'custom' };
 
   function setDrumKit(busName, kit) {
     if (KIT_MAP[kit]) currentKit[busName] = kit;
     preloadKit(kit);
   }
 
-  function getDrumKit(busName) { return currentKit[busName] || '808'; }
+  function getDrumKit(busName) { return currentKit[busName] || 'custom'; }
 
   function preloadKit(kit) {
     const map = KIT_MAP[kit];
     if (!map || loadedKits[kit]) return;
     loadedKits[kit] = {};
     Object.entries(map).forEach(([piece, file]) => {
-      fetch(SAMPLE_PATH + file)
+      fetch(SAMPLE_PATH + file.split('/').map(encodeURIComponent).join('/'))
         .then(r => {
           if (!r.ok) throw new Error('404');
           return r.arrayBuffer();
@@ -282,7 +278,7 @@ const USBSynth = (() => {
   }
 
   function getSample(piece) {
-    const kit = KIT_MAP[getDrumKit('drums')] || KIT_MAP['808'];
+    const kit = KIT_MAP[getDrumKit('drums')] || KIT_MAP['custom'];
     const file = kit[piece];
     return sampleCache[file] || null;
   }

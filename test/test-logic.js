@@ -50,15 +50,6 @@ USBSynth.panic();
 
 
 section('USBPresets');
-assert(USBPresets.names().length >= 5, 'presets: ' + USBPresets.names().join(', '));
-Object.keys(USBPresets.PRESETS).forEach(name => {
-  const p = USBPresets.PRESETS[name];
-  const ok = Object.keys(p.tracks).every(id => {
-    const t = p.tracks[id];
-    return t.steps.length === 16 && t.notes.length === 16 && t.velocities.length === 16;
-  });
-  assert(ok, `preset "${name}" tem 3 arrays de 16 elementos por pista`);
-});
 assert(USBPresets.noteName(60) === 'C4', 'noteName C4');
 assert(USBPresets.noteName(69) === 'A4', 'noteName A4');
 

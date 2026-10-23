@@ -85,7 +85,7 @@ window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new Ar
   assert(window.USBSynth.getBus('lead').cfg.wave2 === 'sawtooth', 'lead: preset supersaw com 2 osciladores');
   assert(window.USBSynth.getBus('bass').cfg.sub > 0, 'bass: preset Moog com suboscilador');
   assert(window.USBSynth.getBus('chords').cfg.chorusMix > 0, 'chords: preset pad com chorus');
-  assert(window.USBSynth.getDrumKit('drums') === '808', 'drums: kit 808 ativo por omissão');
+  assert(window.USBSynth.getDrumKit('drums') === 'custom', 'drums: kit custom (samples do utilizador) por omissão');
   window.USBSynth.setMasterVolume(0.6);
   assert(window.USBSynth.getMasterVolume() !== undefined, 'volume geral acessível');
   const masterGainEl = window.document.querySelector('#masterVol');
@@ -100,14 +100,13 @@ window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new Ar
   const voices = ['lead', 'bass', 'chords', 'drums'];
   voices.forEach(v => {
     const names = window.USBPresets.soundNames(v);
-    assert(names.length >= 4, 'voz ' + v + ' tem >=4 sons próprios (' + names.length + ')');
+    assert(names.length >= 1, 'voz ' + v + ' tem sons próprios (' + names.length + ')');
   });
   const leadNames = window.USBPresets.soundNames('lead');
   const bassNames = window.USBPresets.soundNames('bass');
   assert(!leadNames.some(n => bassNames.includes(n)), 'sons de lead e bass são distintos');
   const drumNames = window.USBPresets.soundNames('drums');
-assert(drumNames.some(n => n.startsWith('Kit')), 'voz drums tem kits de bateria');
-assert(drumNames.includes('TR-808 (meus samples)'), 'voz drums tem o kit TR-808 (meus samples)');
+assert(drumNames.length === 1 && drumNames[0] === 'TR-808 (meus samples)', 'voz drums tem só o kit TR-808 (meus samples)');
   // Mesa de mistura por comando (sem comando detetado, testamos a API do engine)
   window.USBEngine.setMixerVolume(0, 'lead', 0.5);
   assert(window.USBEngine.getMixer(0, 'lead').volume === 0.5, 'volume do canal aplicado');
@@ -129,8 +128,8 @@ assert(drumNames.includes('TR-808 (meus samples)'), 'voz drums tem o kit TR-808 
   // Aplicar som muda o bus
   window.USBPresets.applySound('bass', 'Baixo Moog');
   assert(window.USBSynth.getBus('bass').cfg.wave === 'sawtooth', 'som "Baixo Moog" aplica onda sawtooth ao bus bass');
-  window.USBPresets.applySound('drums', 'Kit 909');
-  assert(window.USBSynth.getDrumKit('drums') === '909', 'som "Kit 909" aplica kit 909');
+  window.USBPresets.applySound('drums', 'TR-808 (meus samples)');
+  assert(window.USBSynth.getDrumKit('drums') === 'custom', 'som TR-808 aplica kit custom');
 
 
   section('Panic');

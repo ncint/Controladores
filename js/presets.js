@@ -41,76 +41,7 @@ const USBPresets = (() => {
     return out;
   }
 
-  function applyPreset(name, seq, arp) {
-    const p = PRESETS[name];
-    if (!p) return false;
-    seq.stop();
-    seq.setBpm(p.bpm || 120);
-    seq.setSwing(p.swing || 0);
-    const state = { bpm: p.bpm || 120, swing: p.swing || 0, playing: false, currentStep: 0, tracks: {}, mutes: {} };
-    for (const id in p.tracks) {
-      const t = p.tracks[id];
-      state.tracks[id] = {
-        kind: t.kind,
-        steps: t.steps.slice(),
-        notes: t.notes.slice(),
-        velocities: t.velocities.slice(),
-      };
-      state.mutes[id] = false;
-    }
-    seq.setState(JSON.parse(JSON.stringify(state)));
-    if (arp && p.arp) {
-      arp.setPattern(p.arp.pattern || 'updown');
-      arp.setRate(p.arp.rate || 0.125);
-      arp.setOctaves(p.arp.octaves || 2);
-    }
-    return true;
-  }
 
-  const PRESETS = {
-    'Básico': {
-      bpm: 100,
-      tracks: {
-        lead: { kind: 'melodic', steps: [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0], notes: [60,60,60,60, 60,60,63,60, 60,60,60,60, 67,60,60,60], velocities: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-        drums: { kind: 'drum', steps: [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0], notes: ['kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick'], velocities: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-      },
-    },
-    'Techno': {
-      bpm: 128,
-      tracks: {
-        lead: { kind: 'melodic', steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0], notes: [45,45,45,45, 45,45,45,45, 48,48,48,48, 43,43,43,43], velocities: [0.9,0.6,0.8,0.6, 0.9,0.6,0.8,0.6, 0.9,0.6,0.8,0.6, 0.9,0.6,0.8,0.6] },
-        drums: { kind: 'drum', steps: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,1], notes: ['kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick'], velocities: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-        drums2: { kind: 'drum', steps: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0], notes: ['hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat'], velocities: [0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5] },
-      },
-    },
-    'Ambiente': {
-      bpm: 70,
-      swing: 0.2,
-      arp: { pattern: 'updown', rate: 0.25, octaves: 2 },
-      tracks: {
-        lead: { kind: 'melodic', steps: [1,0,0,0, 0,0,0,0, 0,0,1,0, 0,0,0,0], notes: [52,52,52,52, 52,52,52,52, 59,59,59,59, 59,59,59,59], velocities: [0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7] },
-      },
-    },
-    'Glitch': {
-      bpm: 140,
-      tracks: {
-        lead: { kind: 'melodic', steps: [1,0,1,1, 0,1,0,1, 1,0,1,0, 0,1,1,0], notes: [48,48,55,48, 48,60,48,48, 53,48,50,48, 48,58,48,55], velocities: [0.8,0.8,0.5,0.8, 0.8,0.4,0.8,0.8, 0.5,0.8,0.8,0.8, 0.8,0.5,0.6,0.8] },
-        drums: { kind: 'drum', steps: [1,0,0,1, 0,1,0,0, 1,1,0,0, 0,1,0,1], notes: ['kick','kick','kick','snare','kick','kick','kick','kick','kick','snare','kick','kick','kick','kick','kick','snare'], velocities: [0.9,0.9,0.9,0.5, 0.9,0.6,0.9,0.9, 0.7,0.5,0.9,0.9, 0.9,0.6,0.9,0.5] },
-        drums2: { kind: 'drum', steps: [0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,1], notes: ['hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat'], velocities: [0.4,0.4,0.4,0.4, 0.4,0.4,0.4,0.4, 0.4,0.4,0.4,0.4, 0.4,0.4,0.4,0.6] },
-      },
-    },
-    'Trap': {
-      bpm: 75,
-      swing: 0.1,
-      tracks: {
-        drums: { kind: 'drum', steps: [1,0,0,0, 0,0,0,1, 0,0,1,0, 0,0,0,0], notes: ['kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick','kick'], velocities: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1] },
-        drums2: { kind: 'drum', steps: [0,0,0,1, 0,0,1,0, 0,0,0,1, 0,0,1,0], notes: ['snare','snare','snare','snare','snare','snare','snare','snare','snare','snare','snare','snare','snare','snare','snare','snare'], velocities: [0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7] },
-        drums3: { kind: 'drum', steps: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1], notes: ['hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat','hat'], velocities: [0.3,0.3,0.4,0.3, 0.3,0.3,0.4,0.3, 0.3,0.3,0.4,0.3, 0.3,0.3,0.4,0.3] },
-      },
-    },
-  };
-
-  function names() { return Object.keys(PRESETS); }
 
   // Presets musicais por voz — parâmetros afinados (osciladores combinados,
   // suboscilador, envelope de filtro, portamento, vibrato, chorus, drive).
@@ -142,11 +73,7 @@ const USBPresets = (() => {
       'Flauta':             { wave: 'triangle', wave2: 'sine',    sub: 0, spread: 300, filterType: 'lowpass', cutoff: 1400, resonance: 1,   filterEnv: 0.25, attack: 0.06, decay: 0.2,  sustain: 0.8,  release: 0.25, detune: 2,  drive: 0,    delayMix: 0.16, delayTime: 0.35, delayFeedback: 0.3,  reverbMix: 0.32, chorusMix: 0.25,portamento: 0.05, volume: 0.65 },
     },
     drums: {
-      'TR-808 (meus samples)': { wave: 'square', filterType: 'highpass', cutoff: 8000, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0, delayMix: 0, delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.06, volume: 0.9, kit: 'custom' },
-      'Kit 808':       { wave: 'square', filterType: 'highpass', cutoff: 8000, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0,   delayMix: 0,   delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.06, volume: 0.9, kit: '808' },
-      'Kit 909':       { wave: 'square', filterType: 'highpass', cutoff: 7500, resonance: 1,   filterEnv: 0, attack: 0.001, decay: 0.04, sustain: 0.5, release: 0.04, detune: 0, drive: 0.1, delayMix: 0,   delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.08, volume: 0.9, kit: '909' },
-      'Kit acústico': { wave: 'square', filterType: 'highpass', cutoff: 6000, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0,   delayMix: 0,   delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.14, volume: 0.85, kit: '808' },
-      'Kit lo-fi':    { wave: 'square', filterType: 'bandpass', cutoff: 3200, resonance: 2,   filterEnv: 0, attack: 0.001, decay: 0.06, sustain: 0.3, release: 0.06, detune: 0, drive: 0.3, delayMix: 0.05,delayTime: 0.3, delayFeedback: 0.2, reverbMix: 0.1,  volume: 0.8, kit: '808' },
+      'TR-808 (meus samples)': { wave: 'square', filterType: 'highpass', cutoff: 200, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0, delayMix: 0, delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.06, volume: 0.95, kit: 'custom' },
     },
   };
 
@@ -162,7 +89,7 @@ const USBPresets = (() => {
     return true;
   }
 
-  return { SCALES, NOTE_NAMES, noteName, PRESETS, names, applyPreset, randomPattern, randomDrumPattern, SOUNDS, soundNames, applySound };
+  return { SCALES, NOTE_NAMES, noteName, SOUNDS, soundNames, applySound };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = USBPresets;

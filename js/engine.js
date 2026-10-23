@@ -116,10 +116,8 @@ const USBEngine = (() => {
     USBSynth.makeBus('lead',   USBPresets.SOUNDS.lead['Supersaw (JP-8000)']);
     USBSynth.makeBus('bass',   USBPresets.SOUNDS.bass['Baixo Moog']);
     USBSynth.makeBus('chords', USBPresets.SOUNDS.chords['Pad etéreo (Juno)']);
-    USBSynth.makeBus('drums',  USBPresets.SOUNDS.drums['Kit 808']);
-    USBSynth.setDrumKit('drums', '808');
-    USBSynth.preloadKit('808');
-    USBSynth.preloadKit('909');
+    USBSynth.makeBus('drums',  USBPresets.SOUNDS.drums['TR-808 (meus samples)']);
+    USBSynth.setDrumKit('drums', 'custom');
     USBSynth.preloadKit('custom');
   }
 
@@ -228,18 +226,6 @@ const USBEngine = (() => {
     USBSynth.applyParams(bus, { [action]: scaled });
   }
 
-  let currentPresetIndex = 0;
-  let lastPresetName = null;
-
-  function nextPreset(seq, arp) {
-    if (!seq) return;
-    const names = USBPresets.names();
-    const idx = names.indexOf(lastPresetName || '');
-    currentPresetIndex = (idx >= 0 ? idx + 1 : 0) % names.length;
-    lastPresetName = names[currentPresetIndex];
-    USBPresets.applyPreset(lastPresetName, seq, arp);
-    return lastPresetName;
-  }
 
   function randomizeAll(seq, arp) {
     if (!seq) return;
@@ -408,7 +394,6 @@ const USBEngine = (() => {
       case 'arpPatternNext': if (arp && typeof USBArpeggiator !== 'undefined') { const pats = USBArpeggiator.PATTERNS; const cur = pats.indexOf(arp.getPattern()); arp.setPattern(pats[(cur + 1) % pats.length]); } break;
       case 'bpmUp': if (seq) seq.setBpm(seq.getBpm() + 5); break;
       case 'bpmDown': if (seq) seq.setBpm(seq.getBpm() - 5); break;
-      case 'nextPreset': nextPreset(seq, arp); break;
       case 'randomizeAll': randomizeAll(seq, arp); break;
       case 'panic': USBSynth.panic(); break;
       case 'waveNext': {
@@ -433,7 +418,7 @@ const USBEngine = (() => {
 
   return {
     init, handle, activity, BUS_ROLES, WAVES,
-    degreeToMidi, randomizeAll, nextPreset,
+    degreeToMidi, randomizeAll,
     roleOctaves, setMixerVolume, setMixerPan, toggleMixerMute, toggleMixerSolo, getMixer, getMixerLevel,
   };
 })();
