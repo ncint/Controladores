@@ -88,6 +88,18 @@ class FakeAudioContext {
   const bassNames = window.USBPresets.soundNames('bass');
   assert(!leadNames.some(n => bassNames.includes(n)), 'sons de lead e bass são distintos');
   assert(window.USBPresets.soundNames('drums').every(n => n.startsWith('Kit')), 'voz drums tem kits de bateria');
+  // Mesa de mistura por comando (sem comando detetado, testamos a API do engine)
+  window.USBEngine.setMixerVolume(0, 'lead', 0.5);
+  assert(window.USBEngine.getMixer(0, 'lead').volume === 0.5, 'volume do canal aplicado');
+  window.USBEngine.setMixerPan(0, 'lead', -0.7);
+  assert(window.USBEngine.getMixer(0, 'lead').pan === -0.7, 'pan do canal aplicado');
+  assert(window.USBEngine.toggleMixerMute(0, 'lead') === true, 'mute liga');
+  assert(window.USBEngine.toggleMixerMute(0, 'lead') === false, 'mute desliga');
+  assert(window.USBEngine.toggleMixerSolo(1, 'bass') === true, 'solo liga no canal 1');
+  // com solo ativo no canal 1, aplicar mixer respeita solo
+  window.USBEngine.setMixerVolume(2, 'chords', 1);
+  assert(window.USBEngine.getMixer(2, 'chords').volume === 1, 'volume canal 2 aplicado');
+  window.USBEngine.toggleMixerSolo(1, 'bass');
   // Aplicar som muda o bus
   window.USBPresets.applySound('bass', 'Baixo Moog');
   assert(window.USBSynth.getBus('bass').cfg.wave === 'sawtooth', 'som "Baixo Moog" aplica onda sawtooth ao bus bass');

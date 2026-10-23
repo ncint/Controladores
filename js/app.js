@@ -98,6 +98,12 @@
           </label>
         </div>
         <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}${profileLabel ? ' · ' + profileLabel : ''}</div>
+        <div class="pad-mixer" id="pad-mixer-${p.index}">
+          <label class="mixer-ctl">Vol <input id="mix-vol-${p.index}" type="range" min="0" max="150" value="${Math.round(USBEngine.getMixer(p.index, role).volume * 100)}"></label>
+          <label class="mixer-ctl">Pan <input id="mix-pan-${p.index}" type="range" min="-100" max="100" value="${Math.round(USBEngine.getMixer(p.index, role).pan * 100)}"></label>
+          <button class="mixer-btn${USBEngine.getMixer(p.index, role).muted ? ' on-danger' : ''}" id="mix-mute-${p.index}">M</button>
+          <button class="mixer-btn${USBEngine.getMixer(p.index, role).solo ? ' on-accent' : ''}" id="mix-solo-${p.index}">S</button>
+        </div>
         <div class="pad-sounds" id="pad-sounds-${p.index}">
           ${soundNames.map(name => `<button class="sound-btn${name === currentSound ? ' active' : ''}" data-sound="${name}">${name}</button>`).join('')}
         </div>
@@ -110,6 +116,22 @@
         USBMapping.setProfile(p.index, e.target.value, p.id, p.buttonCount, p.axisCount);
         refreshPads();
         flash('Perfil aplicado: ' + USBMapping.PROFILES[e.target.value].label);
+      };
+      const volEl = div.querySelector(`#mix-vol-${p.index}`);
+      const panEl = div.querySelector(`#mix-pan-${p.index}`);
+      const muteBtn = div.querySelector(`#mix-mute-${p.index}`);
+      const soloBtn = div.querySelector(`#mix-solo-${p.index}`);
+      volEl.oninput = () => USBEngine.setMixerVolume(p.index, role, parseInt(volEl.value, 10) / 100);
+      panEl.oninput = () => USBEngine.setMixerPan(p.index, role, parseInt(panEl.value, 10) / 100);
+      muteBtn.onclick = () => {
+        const muted = USBEngine.toggleMixerMute(p.index, role);
+        muteBtn.classList.toggle('on-danger', muted);
+        refreshAllMixerButtons();
+      };
+      soloBtn.onclick = () => {
+        const solo = USBEngine.toggleMixerSolo(p.index, role);
+        soloBtn.classList.toggle('on-accent', solo);
+        refreshAllMixerButtons();
       };
       div.querySelectorAll('.sound-btn').forEach(btn => {
         btn.onclick = () => {
@@ -338,6 +360,18 @@
       updateArpNotes();
       flash('Notas do arpejo limpas');
     };
+  }
+
+  function refreshAllMixerButtons() {
+    USBGamepads.all().forEach(p => {
+      const cfg = USBMapping.getPadConfig(p.index);
+      const role = cfg ? cfg.role : 'lead';
+      const m = USBEngine.getMixer(p.index, role);
+      const muteBtn = document.querySelector(`#mix-mute-${p.index}`);
+      const soloBtn = document.querySelector(`#mix-solo-${p.index}`);
+      if (muteBtn) muteBtn.classList.toggle('on-danger', m.muted);
+      if (soloBtn) soloBtn.classList.toggle('on-accent', m.solo);
+    });
   }
 
   function updateArpNotes() {

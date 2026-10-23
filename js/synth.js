@@ -154,7 +154,7 @@ const USBSynth = (() => {
     });
   }
 
-  function triggerVoice(bus, freq, time, dur, velocity = 1) {
+  function triggerVoice(bus, freq, time, dur, velocity = 1, dest = null) {
     if (!ctx) return null;
     const cfg = bus.cfg;
     velocity = Math.min(1, Math.max(0, velocity));
@@ -187,7 +187,7 @@ const USBSynth = (() => {
 
     osc.connect(g);
     osc2.connect(g);
-    g.connect(bus.filter);
+    g.connect(dest || bus.filter);
 
     if (cfg.filterEnv > 0) {
       const base = cfg.cutoff;

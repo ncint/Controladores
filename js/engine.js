@@ -13,6 +13,83 @@ const USBEngine = (() => {
   let pitchBend = 0;
   const onActivity = [];
 
+  // Mesa de mistura por comando: volume, pan, mute, solo.
+  const mixer = {};
+
+  function ensureChannel(padIndex, role) {
+    const key = padIndex + ':' + role;
+    if (!mixer[key]) {
+      const ctx = USBSynth.context();
+      const input = ctx.createGain();
+      const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      const bus = USBSynth.getBus(role);
+      const dest = bus ? bus.input : ctx.destination;
+      if (panner) {
+        input.connect(panner);
+        panner.connect(dest);
+      } else {
+        input.connect(dest);
+      }
+      mixer[key] = {
+        padIndex, role,
+        input, panner,
+        volume: 1, pan: 0, muted: false, solo: false,
+      };
+    }
+    return mixer[key];
+  }
+
+  function applyMixerToChannel(ch) {
+    const ctx = USBSynth.context();
+    const anySolo = Object.values(mixer).some(m => m.solo);
+    const soloedOut = anySolo && !ch.solo;
+    const target = (ch.muted || soloedOut) ? 0 : ch.volume;
+    ch.input.gain.setTargetAtTime(target, ctx.currentTime, 0.02);
+    if (ch.panner) ch.panner.pan.setTargetAtTime(ch.pan, ctx.currentTime, 0.02);
+  }
+
+  function refreshAllMixer() {
+    Object.values(mixer).forEach(applyMixerToChannel);
+  }
+
+  function setMixerVolume(padIndex, role, v) {
+    const ch = ensureChannel(padIndex, role);
+    ch.volume = Math.min(1.5, Math.max(0, v));
+    applyMixerToChannel(ch);
+  }
+
+  function setMixerPan(padIndex, role, v) {
+    const ch = ensureChannel(padIndex, role);
+    ch.pan = Math.min(1, Math.max(-1, v));
+    applyMixerToChannel(ch);
+  }
+
+  function toggleMixerMute(padIndex, role) {
+    const ch = ensureChannel(padIndex, role);
+    ch.muted = !ch.muted;
+    applyMixerToChannel(ch);
+    return ch.muted;
+  }
+
+  function toggleMixerSolo(padIndex, role) {
+    const ch = ensureChannel(padIndex, role);
+    ch.solo = !ch.solo;
+    refreshAllMixer();
+    return ch.solo;
+  }
+
+  function getMixer(padIndex, role) {
+    const key = padIndex + ':' + role;
+    return mixer[key] || { volume: 1, pan: 0, muted: false, solo: false };
+  }
+
+  function channelDestination(padIndex, role) {
+    const ctx = USBSynth.context();
+    if (!ctx) return null;
+    const ch = ensureChannel(padIndex, role);
+    return ch.input;
+  }
+
   function init() {
     if (started) return;
     started = true;
@@ -52,7 +129,8 @@ const USBEngine = (() => {
     const existing = heldVoices[key];
     if (existing) { existing.stop(); delete heldVoices[key]; }
     const freq = USBSynth.noteToFreq(midi) * Math.pow(2, pitchBend / 12);
-    const voice = USBSynth.triggerVoice(bus, freq, undefined, undefined, velocity || 0.9);
+    const dest = channelDestination(padIndex, role) || bus.filter;
+    const voice = USBSynth.triggerVoice(bus, freq, undefined, undefined, velocity || 0.9, dest);
     if (voice) {
       heldVoices[key] = voice;
       voice.midi = midi;
@@ -74,7 +152,8 @@ const USBEngine = (() => {
     const existing = heldVoices[key];
     if (existing) { existing.stop(); delete heldVoices[key]; }
     const freq = USBSynth.noteToFreq(midi) * Math.pow(2, pitchBend / 12);
-    const voice = USBSynth.triggerVoice(bus, freq, undefined, undefined, velocity || 0.9);
+    const dest = channelDestination(key.split(':')[0], role) || bus.filter;
+    const voice = USBSynth.triggerVoice(bus, freq, undefined, undefined, velocity || 0.9, dest);
     if (voice) {
       heldVoices[key] = voice;
       voice.midi = midi;
@@ -332,7 +411,7 @@ const USBEngine = (() => {
   return {
     init, handle, activity, BUS_ROLES, WAVES,
     degreeToMidi, randomizeAll, nextPreset,
-    roleOctaves,
+    roleOctaves, setMixerVolume, setMixerPan, toggleMixerMute, toggleMixerSolo, getMixer,
   };
 })();
 
