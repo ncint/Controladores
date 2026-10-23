@@ -68,6 +68,20 @@ const USBEngine = (() => {
     }
   }
 
+  function startVoiceByKey(key, role, midi, velocity) {
+    const bus = USBSynth.getBus(role);
+    if (!bus) return null;
+    const existing = heldVoices[key];
+    if (existing) { existing.stop(); delete heldVoices[key]; }
+    const freq = USBSynth.noteToFreq(midi) * Math.pow(2, pitchBend / 12);
+    const voice = USBSynth.triggerVoice(bus, freq, undefined, undefined, velocity || 0.9);
+    if (voice) {
+      heldVoices[key] = voice;
+      voice.midi = midi;
+    }
+    return voice;
+  }
+
   function applyPitchBendToHeld() {
     if (!USBSynth.context()) return;
     Object.values(heldVoices).forEach(v => {
@@ -145,6 +159,31 @@ const USBEngine = (() => {
       const now = Date.now();
       if (lastPadPress[debounceKey] && now - lastPadPress[debounceKey] < 20) return false;
       lastPadPress[debounceKey] = now;
+    }
+
+    // Notas por direção de eixo (ex.: cursor SNES como eixos):
+    // cada eixo tem até dois bindings com dir -1/+1; a nota soa enquanto inclinado.
+    if (change.type === 'axis' && meta.type === 'note' && !meta.arp) {
+      const dirBindings = padCfg.bindings.filter(b => b.type === 'axis' && b.index === change.index && USBMapping.ACTIONS[b.action] && USBMapping.ACTIONS[b.action].type === 'note');
+      const hasDir = dirBindings.some(b => b.dir === -1 || b.dir === 1);
+      if (hasDir) {
+        const TH = 0.5;
+        dirBindings.forEach(b => {
+          const want = b.dir === -1 ? change.value <= -TH : change.value >= TH;
+          const key = voiceKey(change.padIndex, role, 'ax' + change.index + (b.dir === -1 ? 'n' : 'p'));
+          if (want && !heldVoices[key]) {
+            const midi = degreeToMidi(role, b.param || 0);
+            startVoiceByKey(key, role, midi, 0.9);
+          } else if (!want && heldVoices[key]) {
+            if (!sustainOn[change.padIndex]) {
+              heldVoices[key].stop();
+              delete heldVoices[key];
+            }
+          }
+        });
+        emitActivity(change.padIndex, action, change.value);
+        return true;
+      }
     }
 
     if (meta.type === 'note') {

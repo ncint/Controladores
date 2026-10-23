@@ -192,7 +192,7 @@ assert(snesCfg.profile === 'snes', 'profileFor cria config SNES para comando nov
 const snesNotes = snesCfg.bindings.filter(b => b.action === 'note' && b.type === 'button');
 assert(snesNotes.length === 10, 'TODOS os 10 botões do SNES tocam notas');
 assert(snesCfg.bindings.every(b => b.action === 'note' || b.action === 'pitchBend' || b.action === 'cutoff'), 'perfil SNES: só notas e eixos de expressão');
-assert(snesCfg.bindings.filter(b => b.type === 'axis').length === 2, 'eixos do SNES mapeados (pitch bend + cutoff)');
+assert(snesCfg.bindings.filter(b => b.type === 'axis').length === 4, 'eixos do SNES mapeados como notas do cursor (4 direções)');
 // Ordem de performance: cursor esq,cima,dir,baixo (14,12,15,13) = graus 0-3; Y(2)=4; X(3)=5; botão 6=6; B(0)=7 (oitava)
 // Testada num comando de 16 botões (com D-pad como botões)
 const snesCfg3 = USBMapping.profileFor(8, 'Retro SNES 16btn', 16, 0);
@@ -210,9 +210,16 @@ assert(USBEngine.degreeToMidi('lead', 7) === USBEngine.degreeToMidi('lead', 0) +
 // Restantes botões por índice, graus 8+
 const rest = snesCfg3.bindings.filter(b => b.type === 'button' && ![14,12,15,13,2,3,6,0].includes(b.index));
 assert(rest.every(b => b.param >= 8), 'botões restantes continuam nos graus 8+');
-// Num comando de 10 botões (sem D-pad como botões), a oitava começa no cursor ou no Y conforme existam
-const deg10 = (idx) => { const b = snesCfg.bindings.find(x => x.type === 'button' && x.index === idx); return b ? b.param : null; };
-assert(deg10(2) === 0 && deg10(3) === 1 && deg10(6) === 2 && deg10(0) === 3, 'SNES 10 botões (sem D-pad): Y,X,6,B = graus 0-3');
+// SNES com cursor como EIXOS (adaptador real do utilizador): eixo 0 = esq/dir (graus 0/2), eixo 1 = cima/baixo (graus 1/3)
+const snesAxes = USBMapping.profileFor(9, 'Retro SNES axes', 10, 2);
+const axB = (axis, dir) => snesAxes.bindings.find(b => b.type === 'axis' && b.index === axis && b.dir === dir);
+assert(axB(0, -1) && axB(0, -1).param === 0, 'eixo 0 (−1, esquerda) = grau 0 (1ª nota)');
+assert(axB(1, -1) && axB(1, -1).param === 1, 'eixo 1 (−1, cima) = grau 1 (2ª nota)');
+assert(axB(0, 1) && axB(0, 1).param === 2, 'eixo 0 (+1, direita) = grau 2 (3ª nota)');
+assert(axB(1, 1) && axB(1, 1).param === 3, 'eixo 1 (+1, baixo) = grau 3 (4ª nota)');
+// Botões continuam no grau 4: Y=4, X=5, botão 6=6, B=7 (oitava)
+const degA = (idx) => snesAxes.bindings.find(b => b.type === 'button' && b.index === idx).param;
+assert(degA(2) === 4 && degA(3) === 5 && degA(6) === 6 && degA(0) === 7, 'com cursor em eixos: Y=4, X=5, 6=6, B=7 (oitava)');
 const snesCfg2 = USBMapping.profileFor(7, '8BitDo SNES Retro', 16, 0);
 assert(snesCfg2.bindings.filter(b => b.type === 'button').length === 16, 'SNES com 16 botões: todos tocam notas');
 assert(snesCfg2.bindings.filter(b => b.type === 'axis').length === 0, 'SNES sem eixos: nenhum binding de eixo');

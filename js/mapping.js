@@ -1,5 +1,5 @@
 const USBMapping = (() => {
-  const STORAGE_KEY = 'usb-orchestra-mappings-v3';
+  const STORAGE_KEY = 'usb-orchestra-mappings-v4';
 
   // Ações que um comando pode controlar.
   const ACTIONS = {
@@ -160,20 +160,25 @@ const USBMapping = (() => {
       // depois os restantes botões por índice.
       bindings = [];
       const n = Math.min(buttonCount || 16, 16);
+      const dpadAsAxes = (axisCount || 0) >= 2;
       const order = SNES_NOTE_ORDER.slice();
       for (let b = 0; b < n; b++) {
         if (!order.includes(b)) order.push(b);
       }
-      let degree = 0;
+      // Cursor como eixos (adaptadores SNES USB comuns):
+      // eixo 0: −1 = esquerda, +1 = direita; eixo 1: −1 = cima, +1 = baixo.
+      // Graus 0-3 = 1ª-4ª notas; os botões continuam no grau 4 (Y), 5 (X), 6, 7 (B).
+      if (dpadAsAxes) {
+        bindings.push({ type: 'axis', index: 0, action: 'note', param: 0, dir: -1 });
+        bindings.push({ type: 'axis', index: 1, action: 'note', param: 1, dir: -1 });
+        bindings.push({ type: 'axis', index: 0, action: 'note', param: 2, dir: 1 });
+        bindings.push({ type: 'axis', index: 1, action: 'note', param: 3, dir: 1 });
+      }
+      let degree = dpadAsAxes ? 4 : 0;
       for (const b of order) {
         if (b < n) {
           bindings.push({ type: 'button', index: b, action: 'note', param: degree++ });
         }
-      }
-      // Eixos (se o adaptador reportar d-pad como eixos): X = pitch bend, Y = cutoff
-      const ax = Math.min(axisCount || 0, 2);
-      for (let a = 0; a < ax; a++) {
-        bindings.push({ type: 'axis', index: a, action: a === 0 ? 'pitchBend' : 'cutoff' });
       }
     }
     state.pads[padIndex] = { role: profile.role, profile: key, bindings };
