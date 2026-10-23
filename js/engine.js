@@ -120,6 +120,7 @@ const USBEngine = (() => {
     USBSynth.setDrumKit('drums', '808');
     USBSynth.preloadKit('808');
     USBSynth.preloadKit('909');
+    USBSynth.preloadKit('custom');
   }
 
   function activity(cb) { onActivity.push(cb); }
@@ -129,6 +130,18 @@ const USBEngine = (() => {
 
   function rootFor(role) {
     return (ROLE_ROOTS[role] || 60);
+  }
+
+  // Na voz drums, cada grau do comando toca uma peça do kit.
+  const DRUM_DEGREES = ['kick','snare','hat','hatOpen','clap','tomLow','tomMid','tomHigh','rim','maraca','clapSnare','kickDriven','kick','snare','hat','hatOpen'];
+
+  function isDrumRole(role) { return role === 'drums'; }
+
+  function triggerDrumPiece(padIndex, role, piece, velocity, controlIndex) {
+    const bus = USBSynth.getBus('drums');
+    if (!bus || !USBSynth.context()) return;
+    const dest = channelDestination(padIndex, 'drums') || bus.input;
+    USBSynth.triggerPercussion(bus, piece, undefined, velocity, dest);
   }
 
   function degreeToMidi(role, degree) {
@@ -276,7 +289,15 @@ const USBEngine = (() => {
         dirBindings.forEach(b => {
           const want = b.dir === -1 ? change.value <= -TH : change.value >= TH;
           const key = voiceKey(change.padIndex, role, 'ax' + change.index + (b.dir === -1 ? 'n' : 'p'));
-          if (want && !heldVoices[key]) {
+          if (isDrumRole(role)) {
+            if (want && !heldVoices[key]) {
+              const piece = DRUM_DEGREES[(b.param || 0) % DRUM_DEGREES.length];
+              triggerDrumPiece(change.padIndex, role, piece, 0.9);
+              heldVoices[key] = { stop() { this.done = true; } };
+            } else if (!want && heldVoices[key] && heldVoices[key].done !== undefined) {
+              delete heldVoices[key];
+            }
+          } else if (want && !heldVoices[key]) {
             const midi = degreeToMidi(role, b.param || 0);
             startVoiceByKey(key, role, midi, 0.9);
           } else if (!want && heldVoices[key]) {
@@ -309,6 +330,18 @@ const USBEngine = (() => {
             if (!arp.isEnabled()) arp.toggle();
           } else {
             arpRemoveNote(change.padIndex);
+          }
+        }
+      } else if (isDrumRole(role)) {
+        if (change.type === 'axis') {
+          if (Math.abs(change.value) > 0.15) {
+            const piece = DRUM_DEGREES[degree % DRUM_DEGREES.length];
+            triggerDrumPiece(change.padIndex, role, piece, Math.abs(change.value), change.index);
+          }
+        } else {
+          if (change.value > 0.5 && change.prev <= 0.5) {
+            const piece = DRUM_DEGREES[degree % DRUM_DEGREES.length];
+            triggerDrumPiece(change.padIndex, role, piece, change.value, change.index);
           }
         }
       } else {

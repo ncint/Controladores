@@ -117,20 +117,23 @@ Os testes cobrem: conversão de notas, limites de BPM, passos do sequenciador, e
 
 ## Os teus samples de bateria (TR-808)
 
-Coloca os teus samples na pasta **`samples/custom/`** do repositório com estes nomes (WAV, preferencialmente 44.1kHz):
+Os teus samples TR-808 já estão mapeados com os nomes originais do pack:
 
-| Ficheiro | Peça |
+| Ficheiro no repo | Peça |
 |---|---|
-| `samples/custom/kick.wav` | Bombo |
-| `samples/custom/snare.wav` | Caixa |
-| `samples/custom/hat.wav` | Hi-hat fechado |
-| `samples/custom/hatOpen.wav` | Hi-hat aberto |
-| `samples/custom/clap.wav` | Palmas |
-| `samples/custom/tomLow.wav` | Tom grave |
-| `samples/custom/tomMid.wav` | Tom médio |
-| `samples/custom/tomHigh.wav` | Tom agudo |
+| `samples/custom/TR808 BD Bass Drum Medium 02.wav` | Bombo |
+| `samples/custom/TR808 BD Bass Drum Driven 02.wav` | Bombo com drive |
+| `samples/custom/TR808 SD Snare Drum 048.wav` | Caixa |
+| `samples/custom/TR808 CH Closed Hat 35.wav` | Hi-hat fechado |
+| `samples/custom/TR808 OH Open Hat 01.wav` | Hi-hat aberto |
+| `samples/custom/TR808 CP Hand Clap 04.wav` | Palmas |
+| `samples/custom/TR808 CPSD Clap Snare Drum 5 Elixir.wav` | Clap+snare |
+| `samples/custom/TR808 MT Mid Tom 22.wav` | Tom grave |
+| `samples/custom/TR808 MT Mid Tom 18.wav` | Tom médio/agudo |
+| `samples/custom/TR808 RS Rim Shot 02.wav` | Rim shot |
+| `samples/custom/ALT Altered 08 MA Maraca Metal.wav` | Maraca |
 
-Só precisas dos que quiseres usar — as peças em falta usam o fallback sintetizado. Depois de fazer push, escolhe o som **"TR-808 (meus samples)"** na voz drums de um comando e as tuas amostras tocam.
+Escolhe o som **"TR-808 (meus samples)"** na voz drums de um comando. Na voz drums, cada grau do comando toca uma peça (ordem): kick, snare, hat fechado, hat aberto, clap, tom grave, tom médio, tom agudo, rim, maraca, clap+snare, bombo driven…
 
 ## Amostras de bateria e licenças
 

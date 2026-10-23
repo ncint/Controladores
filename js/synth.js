@@ -234,7 +234,20 @@ const USBSynth = (() => {
     '909':      { kick: 'kick909.wav', snare: 'snare909.wav', hat: 'hatClosed909.wav', hatOpen: 'hatOpen909.wav', clap: 'clap909.wav', tomLow: 'tomLow909.wav', tomMid: 'tomMid909.wav', tomHigh: 'tomHigh909.wav' },
     'acoustic': { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
     'lofi':     { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
-    'custom':   { kick: 'custom/kick.wav', snare: 'custom/snare.wav', hat: 'custom/hat.wav', hatOpen: 'custom/hatOpen.wav', clap: 'custom/clap.wav', tomLow: 'custom/tomLow.wav', tomMid: 'custom/tomMid.wav', tomHigh: 'custom/tomHigh.wav' },
+    'custom':   {
+      kick: 'custom/TR808 BD Bass Drum Medium 02.wav',
+      snare: 'custom/TR808 SD Snare Drum 048.wav',
+      hat: 'custom/TR808 CH Closed Hat 35.wav',
+      hatOpen: 'custom/TR808 OH Open Hat 01.wav',
+      clap: 'custom/TR808 CP Hand Clap 04.wav',
+      tomLow: 'custom/TR808 MT Mid Tom 22.wav',
+      tomMid: 'custom/TR808 MT Mid Tom 18.wav',
+      tomHigh: 'custom/TR808 MT Mid Tom 18.wav',
+      rim: 'custom/TR808 RS Rim Shot 02.wav',
+      maraca: 'custom/ALT Altered 08 MA Maraca Metal.wav',
+      clapSnare: 'custom/TR808 CPSD Clap Snare Drum 5 Elixir.wav',
+      kickDriven: 'custom/TR808 BD Bass Drum Driven 02.wav',
+    },
   };
 
   let currentKit = { drums: '808' };
@@ -278,10 +291,14 @@ const USBSynth = (() => {
   function pieceFor(kind) {
     switch (kind) {
       case 'kick': return 'kick';
+      case 'kickDriven': return 'kickDriven';
       case 'snare': return 'snare';
       case 'hat': return 'hat';
       case 'hatOpen': return 'hatOpen';
       case 'clap': return 'clap';
+      case 'clapSnare': return 'clapSnare';
+      case 'rim': return 'rim';
+      case 'maraca': return 'maraca';
       case 'tomLow': case 'tomMid': case 'tomHigh': return kind;
       default: return kind;
     }
@@ -297,7 +314,7 @@ const USBSynth = (() => {
       const src = ctx.createBufferSource();
       src.buffer = buf;
       const g = ctx.createGain();
-      g.gain.value = velocity * (bus.cfg.drumGain ? { kick: 1, snare: 0.9, hat: 0.7, hatOpen: 0.7, clap: 0.85 }[piece] || 1 : 1) * ({ kick: 1, snare: 0.9, hat: 0.7, hatOpen: 0.7, clap: 0.85, tomLow: 0.9, tomMid: 0.9, tomHigh: 0.9 }[piece] || 1);
+      g.gain.value = velocity * ({ kick: 1, kickDriven: 0.9, snare: 0.9, hat: 0.7, hatOpen: 0.7, clap: 0.85, clapSnare: 0.85, rim: 0.8, maraca: 0.5, tomLow: 0.9, tomMid: 0.9, tomHigh: 0.9 }[piece] || 1);
       src.connect(g);
       g.connect(dest || bus.input);
       src.start(t);
