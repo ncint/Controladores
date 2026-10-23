@@ -94,10 +94,14 @@ const USBEngine = (() => {
     if (started) return;
     started = true;
     USBSynth.ensure();
-    USBSynth.makeBus('lead', { wave: 'sawtooth', cutoff: 1500, volume: 0.7, delayMix: 0.3, reverbMix: 0.25 });
-    USBSynth.makeBus('bass', { wave: 'square', cutoff: 400, volume: 0.8, delayMix: 0.05, reverbMix: 0.05 });
-    USBSynth.makeBus('chords', { wave: 'triangle', cutoff: 900, volume: 0.5, delayMix: 0.4, reverbMix: 0.5, attack: 0.2, release: 0.8 });
-    USBSynth.makeBus('drums', { wave: 'square', cutoff: 8000, filterType: 'highpass', volume: 0.9, delayMix: 0, reverbMix: 0.1, drive: 0 });
+    // Quatro instrumentos independentes com presets iniciais convincentes.
+    USBSynth.makeBus('lead',   USBPresets.SOUNDS.lead['Supersaw (JP-8000)']);
+    USBSynth.makeBus('bass',   USBPresets.SOUNDS.bass['Baixo Moog']);
+    USBSynth.makeBus('chords', USBPresets.SOUNDS.chords['Pad etéreo (Juno)']);
+    USBSynth.makeBus('drums',  USBPresets.SOUNDS.drums['Kit 808']);
+    USBSynth.setDrumKit('drums', '808');
+    USBSynth.preloadKit('808');
+    USBSynth.preloadKit('909');
     USBArpeggiator.setBus('lead');
   }
 

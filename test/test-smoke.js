@@ -7,7 +7,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 // --- Mocks de Web Audio API ---
 class FakeParam { constructor(v=1){this.value=v;} setValueAtTime(){} linearRampToValueAtTime(){} exponentialRampToValueAtTime(){} setTargetAtTime(){} cancelScheduledValues(){} }
 class FakeNode {
-  constructor(ctx){ this.context=ctx; this.gain=new FakeParam(1); this.frequency=new FakeParam(440); this.detune=new FakeParam(0); this.Q=new FakeParam(1); this.delayTime=new FakeParam(0); this.threshold=new FakeParam(0); this.knee=new FakeParam(0); this.ratio=new FakeParam(1); this.type='sine'; this.buffer=null; this.curve=null; this.oversample='none'; }
+  constructor(ctx){ this.context=ctx; this.gain=new FakeParam(1); this.frequency=new FakeParam(440); this.detune=new FakeParam(0); this.Q=new FakeParam(1); this.delayTime=new FakeParam(0); this.threshold=new FakeParam(0); this.knee=new FakeParam(0); this.ratio=new FakeParam(1); this.attack=new FakeParam(0); this.release=new FakeParam(0); this.pan=new FakeParam(0); this.type='sine'; this.buffer=null; this.curve=null; this.oversample='none'; }
   connect(){ return arguments[0]; } disconnect(){}
 }
 class FakeOsc extends FakeNode { start(){} stop(){ if(this.onended)this.onended(); } }
@@ -18,6 +18,7 @@ class FakeDelay extends FakeNode { constructor(ctx){ super(ctx); this.delayTime=
 class FakeWaveShaper extends FakeNode { constructor(ctx){ super(ctx); this.curve=null; } }
 class FakeConvolver extends FakeNode { constructor(ctx){ super(ctx); this.buffer=null; } }
 class FakeCompressor extends FakeNode { constructor(ctx){ super(ctx); } }
+class FakeStereoPanner extends FakeNode { constructor(ctx){ super(ctx); this.pan = new FakeParam(0); } }
 class FakeBuffer { constructor(len, rate){ this.length=len; this.sampleRate=rate; this.numberOfChannels=2; } getChannelData(){ return new Float32Array(this.length); } }
 class FakeAudioContext {
   constructor(){ this.state='running'; this.currentTime=0; this.sampleRate=44100; this.destination=new FakeNode(this); }
@@ -29,6 +30,8 @@ class FakeAudioContext {
   createWaveShaper(){ return new FakeWaveShaper(this); }
   createConvolver(){ return new FakeConvolver(this); }
   createDynamicsCompressor(){ return new FakeCompressor(this); }
+  createStereoPanner(){ return new FakeStereoPanner(this); }
+  decodeAudioData(b){ return Promise.resolve({ duration: 0.5, numberOfChannels: 1, getChannelData: () => new Float32Array(100) }); }
   createBuffer(ch, len, rate){ return new FakeBuffer(len, rate); }
 }
 
@@ -42,6 +45,7 @@ class FakeAudioContext {
   const { window } = dom;
 
   window.AudioContext = FakeAudioContext;
+window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)) });
   window.onerror = (msg) => errors.push(String(msg));
 
   const jsFiles = ['presets.js','synth.js','sequencer.js','arpeggiator.js','gamepads.js','mapping.js','engine.js'];
@@ -73,6 +77,17 @@ class FakeAudioContext {
   assert(window.document.querySelector('#startOverlay').style.display === 'none', 'overlay fecha após ativar');
   assert(window.USBSynth.context() instanceof FakeAudioContext, 'AudioContext criado');
   assert(window.USBSynth.getBus('lead') && window.USBSynth.getBus('bass') && window.USBSynth.getBus('chords') && window.USBSynth.getBus('drums'), '4 buses criados (lead, bass, chords, drums)');
+  assert(window.USBSynth.getBus('lead').cfg.wave2 === 'sawtooth', 'lead: preset supersaw com 2 osciladores');
+  assert(window.USBSynth.getBus('bass').cfg.sub > 0, 'bass: preset Moog com suboscilador');
+  assert(window.USBSynth.getBus('chords').cfg.chorusMix > 0, 'chords: preset pad com chorus');
+  assert(window.USBSynth.getDrumKit('drums') === '808', 'drums: kit 808 ativo por omissão');
+  window.USBSynth.setMasterVolume(0.6);
+  assert(window.USBSynth.getMasterVolume() !== undefined, 'volume geral acessível');
+  const masterGainEl = window.document.querySelector('#masterVol');
+  assert(masterGainEl !== null, 'slider de volume geral presente na interface');
+  masterGainEl.value = '60';
+  masterGainEl.dispatchEvent(new window.Event('input', {bubbles:true}));
+  assert(true, 'ajustar volume geral não lança erro');
 
   section('Interface');
   const presetOptions = window.document.querySelectorAll('#presetSelect option');

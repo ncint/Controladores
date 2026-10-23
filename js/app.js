@@ -413,6 +413,9 @@
     flash('⚠ Erro: ' + e.message);
   });
 
+  $('#masterVol').addEventListener('input', (e) => {
+    if (USBSynth.context()) USBSynth.setMasterVolume(parseInt(e.target.value, 10) / 100);
+  });
   $('#btnStart').addEventListener('click', () => { start(); flash('Som ativado! Prime botões no comando 🎮'); });
   bindTransport();
   USBGamepads.start();
