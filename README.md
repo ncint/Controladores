@@ -115,6 +115,23 @@ Os testes cobrem: conversão de notas, limites de BPM, passos do sequenciador, e
 - Latência em sistemas com muitos dispositivos USB.
 - Comportamento ao ligar/desligar comandos durante a performance (a aplicação já deteta e atualiza, mas convém testar com o hardware real).
 
+## Os teus samples de bateria (TR-808)
+
+Coloca os teus samples na pasta **`samples/custom/`** do repositório com estes nomes (WAV, preferencialmente 44.1kHz):
+
+| Ficheiro | Peça |
+|---|---|
+| `samples/custom/kick.wav` | Bombo |
+| `samples/custom/snare.wav` | Caixa |
+| `samples/custom/hat.wav` | Hi-hat fechado |
+| `samples/custom/hatOpen.wav` | Hi-hat aberto |
+| `samples/custom/clap.wav` | Palmas |
+| `samples/custom/tomLow.wav` | Tom grave |
+| `samples/custom/tomMid.wav` | Tom médio |
+| `samples/custom/tomHigh.wav` | Tom agudo |
+
+Só precisas dos que quiseres usar — as peças em falta usam o fallback sintetizado. Depois de fazer push, escolhe o som **"TR-808 (meus samples)"** na voz drums de um comando e as tuas amostras tocam.
+
 ## Amostras de bateria e licenças
 
 As amostras em `samples/*.wav` (kick, snare, hi-hats, clap, toms — kits 808 e 909) foram **geradas por síntese pelo próprio projeto** com `scripts/make-samples.js` (Node.js puro, sem dependências). São originais, sem restrições de redistribuição. Para regenerar: `node scripts/make-samples.js`.

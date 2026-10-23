@@ -142,6 +142,7 @@ const USBPresets = (() => {
       'Flauta':             { wave: 'triangle', wave2: 'sine',    sub: 0, spread: 300, filterType: 'lowpass', cutoff: 1400, resonance: 1,   filterEnv: 0.25, attack: 0.06, decay: 0.2,  sustain: 0.8,  release: 0.25, detune: 2,  drive: 0,    delayMix: 0.16, delayTime: 0.35, delayFeedback: 0.3,  reverbMix: 0.32, chorusMix: 0.25,portamento: 0.05, volume: 0.65 },
     },
     drums: {
+      'TR-808 (meus samples)': { wave: 'square', filterType: 'highpass', cutoff: 8000, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0, delayMix: 0, delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.06, volume: 0.9, kit: 'custom' },
       'Kit 808':       { wave: 'square', filterType: 'highpass', cutoff: 8000, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0,   delayMix: 0,   delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.06, volume: 0.9, kit: '808' },
       'Kit 909':       { wave: 'square', filterType: 'highpass', cutoff: 7500, resonance: 1,   filterEnv: 0, attack: 0.001, decay: 0.04, sustain: 0.5, release: 0.04, detune: 0, drive: 0.1, delayMix: 0,   delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.08, volume: 0.9, kit: '909' },
       'Kit acústico': { wave: 'square', filterType: 'highpass', cutoff: 6000, resonance: 0.5, filterEnv: 0, attack: 0.001, decay: 0.05, sustain: 0.4, release: 0.05, detune: 0, drive: 0,   delayMix: 0,   delayTime: 0.2, delayFeedback: 0.1, reverbMix: 0.14, volume: 0.85, kit: '808' },

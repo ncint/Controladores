@@ -105,7 +105,9 @@ window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new Ar
   const leadNames = window.USBPresets.soundNames('lead');
   const bassNames = window.USBPresets.soundNames('bass');
   assert(!leadNames.some(n => bassNames.includes(n)), 'sons de lead e bass são distintos');
-  assert(window.USBPresets.soundNames('drums').every(n => n.startsWith('Kit')), 'voz drums tem kits de bateria');
+  const drumNames = window.USBPresets.soundNames('drums');
+assert(drumNames.some(n => n.startsWith('Kit')), 'voz drums tem kits de bateria');
+assert(drumNames.includes('TR-808 (meus samples)'), 'voz drums tem o kit TR-808 (meus samples)');
   // Mesa de mistura por comando (sem comando detetado, testamos a API do engine)
   window.USBEngine.setMixerVolume(0, 'lead', 0.5);
   assert(window.USBEngine.getMixer(0, 'lead').volume === 0.5, 'volume do canal aplicado');

@@ -234,6 +234,7 @@ const USBSynth = (() => {
     '909':      { kick: 'kick909.wav', snare: 'snare909.wav', hat: 'hatClosed909.wav', hatOpen: 'hatOpen909.wav', clap: 'clap909.wav', tomLow: 'tomLow909.wav', tomMid: 'tomMid909.wav', tomHigh: 'tomHigh909.wav' },
     'acoustic': { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
     'lofi':     { kick: 'kick808.wav', snare: 'snare808.wav', hat: 'hatClosed808.wav', hatOpen: 'hatOpen808.wav', clap: 'clap808.wav', tomLow: 'tomLow808.wav', tomMid: 'tomMid808.wav', tomHigh: 'tomHigh808.wav' },
+    'custom':   { kick: 'custom/kick.wav', snare: 'custom/snare.wav', hat: 'custom/hat.wav', hatOpen: 'custom/hatOpen.wav', clap: 'custom/clap.wav', tomLow: 'custom/tomLow.wav', tomMid: 'custom/tomMid.wav', tomHigh: 'custom/tomHigh.wav' },
   };
 
   let currentKit = { drums: '808' };
@@ -251,11 +252,20 @@ const USBSynth = (() => {
     loadedKits[kit] = {};
     Object.entries(map).forEach(([piece, file]) => {
       fetch(SAMPLE_PATH + file)
-        .then(r => r.arrayBuffer())
+        .then(r => {
+          if (!r.ok) throw new Error('404');
+          return r.arrayBuffer();
+        })
         .then(b => ctx.decodeAudioData(b))
         .then(buf => { sampleCache[file] = buf; loadedKits[kit][piece] = file; })
         .catch(() => {});
     });
+  }
+
+  // Verifica que amostras existem num kit (para UI mostrar disponibilidade).
+  function kitPiecesLoaded(kit) {
+    if (!loadedKits[kit]) return null;
+    return Object.keys(loadedKits[kit]).length;
   }
 
   function getSample(piece) {
@@ -568,7 +578,7 @@ const USBSynth = (() => {
     ensure, makeBus, getBus, allBuses, triggerVoice, triggerPercussion,
     applyParams, noteToFreq, panic, context, masterNode,
     setDrumKit, getDrumKit, setMasterVolume, getMasterVolume, getMasterLevel,
-    preloadKit,
+    preloadKit, kitPiecesLoaded,
   };
 })();
 
