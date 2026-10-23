@@ -127,6 +127,13 @@ main {
 .pad-card .pad-title { font-weight: 700; margin: 2px 0 6px; }
 .pad-card .pad-role { font-size: 12px; color: var(--accent); }
 .pad-card .pad-meta { font-size: 11px; color: var(--dim); margin-top: 4px; }
+.pad-card .pad-last { font-size: 11px; color: var(--dim); margin-top: 6px; font-family: monospace; min-height: 14px; }
+.pad-card .pad-last.lit { color: var(--accent); }
+.pad-role-select { background: var(--panel); color: var(--accent); border: 1px solid #2c314a; border-radius: 6px; padding: 2px 6px; font-size: 12px; margin-left: 4px; }
+.pad-role-select-label { font-size: 12px; color: var(--dim); }
+.profile-tag { font-size: 10px; color: var(--accent2); margin-left: 4px; }
+.arp-notes-display { margin-top: 10px; font-size: 13px; color: var(--dim); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.arp-notes-list { color: var(--accent); font-family: monospace; }
 .pad-card.active { border-color: var(--accent); box-shadow: 0 0 12px rgba(110, 231, 255, 0.25); }
 .pad-dot {
   display: inline-block; width: 9px; height: 9px; border-radius: 50%;

@@ -41,6 +41,7 @@
     USBGamepads.on('change', (change) => {
       USBEngine.handle(change, USBSequencer, USBArpeggiator);
       markPadActive(change.padIndex);
+      showPadInput(change);
     });
     USBSequencer.setCallbacks(renderStep, null);
     USBArpeggiator.setOnNote(() => {});
@@ -101,8 +102,19 @@
       div.innerHTML = `
         <div class="pad-title"><span class="pad-dot" id="pad-dot-${p.index}"></span>Comando ${p.index + 1}</div>
         <div class="pad-id">${p.id}</div>
-        <div class="pad-role">Função: ${cfg ? cfg.role : '—'}${profileLabel ? ' · ' + profileLabel : ''}</div>
-        <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}</div>`;
+        <div class="pad-role">
+          <label class="pad-role-select-label">Voz:
+            <select id="pad-role-${p.index}" class="pad-role-select">
+              ${USBEngine.BUS_ROLES.map(r => `<option value="${r}" ${cfg && cfg.role === r ? 'selected' : ''}>${r}</option>`).join('')}
+            </select>
+          </label>${profileLabel ? ' <span class="profile-tag">' + profileLabel + '</span>' : ''}
+        </div>
+        <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}</div>
+        <div class="pad-last" id="pad-last-${p.index}">—</div>`;
+      div.querySelector(`#pad-role-${p.index}`).onchange = (e) => {
+        USBMapping.setBinding(p.index, null, null, null, e.target.value);
+        refreshPads();
+      };
       list.appendChild(div);
     });
   }
@@ -110,10 +122,24 @@
   let padActiveTimeouts = {};
   function markPadActive(idx) {
     const dot = $('#pad-dot-' + idx);
-    if (!dot) return;
-    dot.classList.add('on');
-    clearTimeout(padActiveTimeouts[idx]);
-    padActiveTimeouts[idx] = setTimeout(() => dot.classList.remove('on'), 300);
+    if (dot) {
+      dot.classList.add('on');
+      clearTimeout(padActiveTimeouts[idx]);
+      padActiveTimeouts[idx] = setTimeout(() => dot.classList.remove('on'), 300);
+    }
+  }
+
+  function showPadInput(change) {
+    const el = $('#pad-last-' + change.padIndex);
+    if (!el) return;
+    const val = Math.round(change.value * 100) / 100;
+    el.textContent = (change.type === 'button' ? 'Botão ' : 'Eixo ') + change.index + ' = ' + val;
+    el.classList.add('lit');
+    clearTimeout(padActiveTimeouts['last' + change.padIndex]);
+    padActiveTimeouts['last' + change.padIndex] = setTimeout(() => {
+      el.classList.remove('lit');
+      el.textContent = '—';
+    }, 2500);
   }
 
   function buildSeqGrid() {
@@ -346,12 +372,27 @@
       USBArpeggiator.setRate(arpRateMs / 1000);
     };
     $('#arpOct').oninput = (e) => USBArpeggiator.setOctaves(parseInt(e.target.value, 10));
+    $('#arpClear').onclick = () => {
+      USBArpeggiator.clearNotes();
+      updateArpNotes();
+      flash('Notas do arpejo limpas');
+    };
+  }
+
+  function updateArpNotes() {
+    const el = $('#arpNotesList');
+    if (!el) return;
+    const notes = USBArpeggiator.heldNotes();
+    el.textContent = notes.length ? notes.map(n => USBPresets.noteName(n)).join('  ') : '—';
+    const cb = $('#arpEnable');
+    if (cb) cb.checked = USBArpeggiator.isEnabled();
   }
 
   function periodicRefresh() {
     setInterval(() => {
       if (USBGamepads.count() && $('#padsList').querySelector('.empty')) refreshPads();
-    }, 2000);
+      updateArpNotes();
+    }, 500);
   }
 
   const KB_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'w', 'e', 't', 'y', 'u'];

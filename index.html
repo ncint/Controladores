@@ -67,6 +67,7 @@
         <h2>Arpegiador</h2>
         <label class="switch"><input type="checkbox" id="arpEnable"> <span>Ativo</span></label>
       </div>
+      <p class="hint">O arpegiador repete em loop as notas que estão guardadas, uma a uma, no padrão escolhido. Guarda notas: prime o botão <strong>Arpejo</strong> (Options num comando com sticks) e depois toca notas no comando — ficam retidas. Ao soltar o botão Arpejo, o loop continua com essas notas até as limpares aqui.</p>
       <div class="arp-controls">
         <label class="ctl">Padrão
           <select id="arpPattern">
@@ -81,6 +82,11 @@
         </label>
         <label class="ctl">Velocidade <input id="arpRate" type="range" min="60" max="500" value="125"></label>
         <label class="ctl">Oitavas <input id="arpOct" type="range" min="1" max="4" value="2"></label>
+        <button id="arpClear" class="btn small">✕ Limpar notas</button>
+      </div>
+      <div class="arp-notes-display">
+        <span class="arp-notes-label">Notas guardadas:</span>
+        <span id="arpNotesList" class="arp-notes-list">—</span>
       </div>
     </section>
 

@@ -1,5 +1,5 @@
 const USBMapping = (() => {
-  const STORAGE_KEY = 'usb-orchestra-mappings-v2';
+  const STORAGE_KEY = 'usb-orchestra-mappings-v3';
 
   // Ações que um comando pode controlar.
   const ACTIONS = {
@@ -197,6 +197,13 @@ const USBMapping = (() => {
       return null;
     }
   }
+
+  // Remove versões antigas da configuração guardada (perfis mudaram).
+  try {
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('usb-orchestra-mappings-') && k !== STORAGE_KEY)
+      .forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
 
   function save() {
     try {

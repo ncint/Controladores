@@ -116,6 +116,13 @@ const USBArpeggiator = (() => {
 
   function setOnNote(cb) { onNote = cb; }
 
+  function heldNotes() { return state.notes.slice(); }
+
+  function clearNotes() {
+    state.notes = [];
+    state.index = 0;
+  }
+
   function getState() {
     return { enabled: state.enabled, pattern: state.pattern, rate: state.rate, octaves: state.octaves, hold: state.hold, gate: state.gate };
   }
@@ -130,7 +137,7 @@ const USBArpeggiator = (() => {
     state.enabled = !!s.enabled;
   }
 
-  return { toggle, isEnabled, getPattern, setPattern, setRate, setOctaves, setGate, holdNotes, setHold, setBus, setOnNote, getState, setState, PATTERNS: Object.keys(PATTERNS) };
+  return { toggle, isEnabled, getPattern, setPattern, setRate, setOctaves, setGate, holdNotes, heldNotes, clearNotes, setHold, setBus, setOnNote, getState, setState, PATTERNS: Object.keys(PATTERNS) };
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = USBArpeggiator;
