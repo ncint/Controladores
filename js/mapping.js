@@ -1,5 +1,5 @@
 const USBMapping = (() => {
-  const STORAGE_KEY = 'usb-orchestra-mappings-v4';
+  const STORAGE_KEY = 'usb-orchestra-mappings-v5';
 
   // Ações que um comando pode controlar.
   const ACTIONS = {
@@ -132,14 +132,16 @@ const USBMapping = (() => {
 
   function detectProfile(padId, buttonCount, axisCount) {
     const id = (padId || '').toLowerCase();
-    // SNES: típico 10-12 botões e 0-2 eixos; ou ID conhecido
+    // Comandos modernos óbvios → genérico
+    if (/dualshock|dualsense|xbox|playstation 4|playstation 5|steam|nintendo switch pro|switch pro/i.test(id)) return 'generic';
     for (const key of Object.keys(PROFILES)) {
       if (key === 'generic') continue;
       const p = PROFILES[key];
       if (p.match(id, buttonCount, axisCount)) return key;
     }
-    // Heurística: poucos botões e sem eixos suficientes → tipo retro
-    if (buttonCount <= 12 && axisCount <= 2) return 'snes';
+    // Heurística retro: poucos botões e poucos eixos (adaptadores variam:
+    // alguns reportam eixos extra ou botões L/R como eixos)
+    if (buttonCount <= 13 && axisCount <= 4) return 'snes';
     return 'generic';
   }
 
@@ -149,38 +151,47 @@ const USBMapping = (() => {
 // D-pad como botões: 14=esq, 12=cima, 15=dir, 13=baixo. Face standard: 0=B, 1=A, 2=Y, 3=X.
   const SNES_NOTE_ORDER = [14, 12, 15, 13, 2, 3, 6, 0];
 
-  function profileFor(padIndex, padId, buttonCount, axisCount) {
-    const cfg = state.pads[padIndex];
-    if (cfg && cfg.bindings && cfg.bindings.length) return cfg;
-    const key = detectProfile(padId, buttonCount, axisCount);
-    const profile = PROFILES[key];
-    let bindings = JSON.parse(JSON.stringify(profile.bindings));
-    if (key === 'snes') {
-      // Todos os botões tocam notas: uma oitava na ordem de performance,
-      // depois os restantes botões por índice.
-      bindings = [];
-      const n = Math.min(buttonCount || 16, 16);
-      const dpadAsAxes = (axisCount || 0) >= 2;
-      const order = SNES_NOTE_ORDER.slice();
-      for (let b = 0; b < n; b++) {
-        if (!order.includes(b)) order.push(b);
-      }
-      // Cursor como eixos (adaptadores SNES USB comuns):
-      // eixo 0: −1 = esquerda, +1 = direita; eixo 1: −1 = cima, +1 = baixo.
-      // Graus 0-3 = 1ª-4ª notas; os botões continuam no grau 4 (Y), 5 (X), 6, 7 (B).
-      if (dpadAsAxes) {
-        bindings.push({ type: 'axis', index: 0, action: 'note', param: 0, dir: -1 });
-        bindings.push({ type: 'axis', index: 1, action: 'note', param: 1, dir: -1 });
-        bindings.push({ type: 'axis', index: 0, action: 'note', param: 2, dir: 1 });
-        bindings.push({ type: 'axis', index: 1, action: 'note', param: 3, dir: 1 });
-      }
-      let degree = dpadAsAxes ? 4 : 0;
-      for (const b of order) {
-        if (b < n) {
-          bindings.push({ type: 'button', index: b, action: 'note', param: degree++ });
-        }
+  function bindingsForProfile(key, buttonCount, axisCount) {
+    if (key !== 'snes') return JSON.parse(JSON.stringify(PROFILES[key].bindings));
+    const bindings = [];
+    const n = Math.min(buttonCount || 16, 16);
+    const dpadAsAxes = (axisCount || 0) >= 2;
+    if (dpadAsAxes) {
+      bindings.push({ type: 'axis', index: 0, action: 'note', param: 0, dir: -1 });
+      bindings.push({ type: 'axis', index: 1, action: 'note', param: 1, dir: -1 });
+      bindings.push({ type: 'axis', index: 0, action: 'note', param: 2, dir: 1 });
+      bindings.push({ type: 'axis', index: 1, action: 'note', param: 3, dir: 1 });
+    }
+    const order = SNES_NOTE_ORDER.slice();
+    for (let b = 0; b < n; b++) {
+      if (!order.includes(b)) order.push(b);
+    }
+    let degree = dpadAsAxes ? 4 : 0;
+    for (const b of order) {
+      if (b < n) {
+        bindings.push({ type: 'button', index: b, action: 'note', param: degree++ });
       }
     }
+    return bindings;
+  }
+
+  function setProfile(padIndex, key, padId, buttonCount, axisCount) {
+    if (!PROFILES[key]) key = 'generic';
+    state.pads[padIndex] = {
+      role: (state.pads[padIndex] && state.pads[padIndex].role) || PROFILES[key].role,
+      profile: key,
+      bindings: bindingsForProfile(key, buttonCount, axisCount),
+    };
+    save();
+    return state.pads[padIndex];
+  }
+
+  function profileFor(padIndex, padId, buttonCount, axisCount) {
+    const cfg = state.pads[padIndex];
+    if (cfg && cfg.profile && cfg.bindings && cfg.bindings.length) return cfg;
+    const key = detectProfile(padId, buttonCount, axisCount);
+    const profile = PROFILES[key];
+    const bindings = bindingsForProfile(key, buttonCount, axisCount);
     state.pads[padIndex] = { role: profile.role, profile: key, bindings };
     save();
     return state.pads[padIndex];
@@ -297,7 +308,7 @@ const USBMapping = (() => {
   }
 
   return {
-    ACTIONS, DEFAULT, PROFILES, detectProfile, profileFor, getPadConfig, setBinding, clearBindings, resetToDefault,
+    ACTIONS, DEFAULT, PROFILES, detectProfile, profileFor, setProfile, bindingsForProfile, getPadConfig, setBinding, clearBindings, resetToDefault,
     save, load, onLearn, startLearn, stopLearn, isLearning, feedLearn,
     getState, setState, nextFreeDegree,
   };

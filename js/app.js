@@ -107,13 +107,23 @@
             <select id="pad-role-${p.index}" class="pad-role-select">
               ${USBEngine.BUS_ROLES.map(r => `<option value="${r}" ${cfg && cfg.role === r ? 'selected' : ''}>${r}</option>`).join('')}
             </select>
-          </label>${profileLabel ? ' <span class="profile-tag">' + profileLabel + '</span>' : ''}
+          </label>
+          <label class="pad-role-select-label">Perfil:
+            <select id="pad-profile-${p.index}" class="pad-role-select">
+              ${Object.keys(USBMapping.PROFILES).map(k => `<option value="${k}" ${p.profile === k ? 'selected' : ''}>${USBMapping.PROFILES[k].label}</option>`).join('')}
+            </select>
+          </label>
         </div>
         <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}</div>
         <div class="pad-last" id="pad-last-${p.index}">—</div>`;
       div.querySelector(`#pad-role-${p.index}`).onchange = (e) => {
         USBMapping.setBinding(p.index, null, null, null, e.target.value);
         refreshPads();
+      };
+      div.querySelector(`#pad-profile-${p.index}`).onchange = (e) => {
+        USBMapping.setProfile(p.index, e.target.value, p.id, p.buttonCount, p.axisCount);
+        refreshPads();
+        flash('Perfil aplicado: ' + USBMapping.PROFILES[e.target.value].label);
       };
       list.appendChild(div);
     });
