@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USB Orchestra — Comandos de consola como instrumento musical</title>
+  <meta name="description" content="Instrumento eletrónico experimental controlado por comandos USB de consolas, direto no navegador.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🎮</span>
+      <div>
+        <h1>USB Orchestra</h1>
+        <p class="tagline">Comandos de consola como instrumento musical</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <select id="presetSelect" title="Escolhe um preset para começar"></select>
+      <button id="btnRandomAll" class="btn accent" title="Gera variações aleatórias em tudo">🎲 Variar</button>
+      <button id="btnPanic" class="btn danger" title="Silencia todas as vozes">✋ Panic</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Ecrã inicial: ativação do áudio -->
+    <section id="startOverlay" class="start-overlay">
+      <div class="start-card">
+        <h2>Bem-vindo à USB Orchestra 🎮🎵</h2>
+        <p>Liga até 4 comandos USB (DualShock 3, comandos Nintendo, genéricos...) e prime qualquer botão para os detetar.</p>
+        <p class="hint">O som só arranca quando premires o botão abaixo (exigência dos navegadores).</p>
+        <button id="btnStart" class="btn start">▶ Ativar som e começar</button>
+        <p class="mini">Funciona no navegador. Nada é instalado, nada é enviado para servidores.</p>
+      </div>
+    </section>
+
+    <!-- Estado dos comandos -->
+    <section class="panel" id="padsPanel">
+      <div class="panel-head">
+        <h2>Comandos ligados</h2>
+        <button id="btnRescan" class="btn small">↻ Detetar</button>
+      </div>
+      <div id="padsList" class="pads-list">
+        <p class="empty">Nenhum comando detetado. Prime um botão num comando ligado por USB.</p>
+      </div>
+    </section>
+
+    <!-- Transporte -->
+    <section class="panel">
+      <div class="panel-head"><h2>Sequenciador</h2></div>
+      <div class="transport">
+        <button id="btnPlay" class="btn play">▶ Tocar</button>
+        <label class="ctl">BPM <input id="bpmInput" type="range" min="40" max="240" value="110"></label>
+        <label class="ctl">Swing <input id="swingInput" type="range" min="0" max="100" value="0"></label>
+        <button id="btnRandomSeq" class="btn small">🎲 Padrão</button>
+        <button id="btnClearSeq" class="btn small">✕ Limpar</button>
+      </div>
+      <div id="seqGrid" class="seq-grid"></div>
+    </section>
+
+    <!-- Arpegiador -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Arpegiador</h2>
+        <label class="switch"><input type="checkbox" id="arpEnable"> <span>Ativo</span></label>
+      </div>
+      <div class="arp-controls">
+        <label class="ctl">Padrão
+          <select id="arpPattern">
+            <option value="up">Subida</option>
+            <option value="down">Descida</option>
+            <option value="updown" selected>Sobe-desce</option>
+            <option value="downup">Desce-sobe</option>
+            <option value="random">Aleatório</option>
+            <option value="randomWalk">Passeio aleatório</option>
+            <option value="order">Ordem premida</option>
+          </select>
+        </label>
+        <label class="ctl">Velocidade <input id="arpRate" type="range" min="60" max="500" value="125"></label>
+        <label class="ctl">Oitavas <input id="arpOct" type="range" min="1" max="4" value="2"></label>
+      </div>
+    </section>
+
+    <!-- Sintetizador -->
+    <section class="panel">
+      <div class="panel-head"><h2>Sintetizador</h2></div>
+      <div class="synth-tabs" id="synthTabs"></div>
+      <div class="synth-controls" id="synthControls"></div>
+    </section>
+
+    <!-- Mapeamento -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Mapeamento dos comandos</h2>
+        <button id="btnResetMapping" class="btn small danger">Repor predefinido</button>
+      </div>
+      <p class="hint">Modo aprender: escolhe uma ação, depois prime/mexe o controlo do comando que a vai controlar. As configurações ficam guardadas neste navegador.</p>
+      <div id="mappingUI" class="mapping"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>USB Orchestra — instrumento experimental para workshops e performances. Sem servidores, sem dados pessoais.</p>
+  </footer>
+
+  <script src="js/presets.js"></script>
+  <script src="js/synth.js"></script>
+  <script src="js/sequencer.js"></script>
+  <script src="js/arpeggiator.js"></script>
+  <script src="js/gamepads.js"></script>
+  <script src="js/mapping.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
