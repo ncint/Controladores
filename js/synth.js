@@ -4,6 +4,7 @@ const USBSynth = (() => {
   let ctx = null;
   let master = null;
   let masterOut = null;
+  let masterAnalyser = null;
   const buses = {};
   const SAMPLE_PATH = 'samples/';
   const sampleCache = {};
@@ -26,6 +27,9 @@ const USBSynth = (() => {
       master.connect(limiter);
       limiter.connect(masterOut);
       masterOut.connect(ctx.destination);
+      masterAnalyser = ctx.createAnalyser();
+      masterAnalyser.fftSize = 256;
+      master.connect(masterAnalyser);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -543,6 +547,18 @@ const USBSynth = (() => {
   function context() { return ctx; }
   function masterNode() { return master; }
 
+  const masterBuf = new Uint8Array(256);
+  function getMasterLevel() {
+    if (!masterAnalyser) return 0;
+    masterAnalyser.getByteTimeDomainData(masterBuf);
+    let sum = 0;
+    for (let i = 0; i < masterBuf.length; i++) {
+      const v = (masterBuf[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.sqrt(sum / masterBuf.length);
+  }
+
   function setMasterVolume(v) {
     if (master) master.gain.setTargetAtTime(Math.min(1.2, Math.max(0, v)), ctx.currentTime, 0.02);
   }
@@ -551,7 +567,7 @@ const USBSynth = (() => {
   return {
     ensure, makeBus, getBus, allBuses, triggerVoice, triggerPercussion,
     applyParams, noteToFreq, panic, context, masterNode,
-    setDrumKit, getDrumKit, setMasterVolume, getMasterVolume,
+    setDrumKit, getDrumKit, setMasterVolume, getMasterVolume, getMasterLevel,
     preloadKit,
   };
 })();

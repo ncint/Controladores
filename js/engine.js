@@ -30,9 +30,12 @@ const USBEngine = (() => {
       } else {
         input.connect(dest);
       }
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      input.connect(analyser);
       mixer[key] = {
         padIndex, role,
-        input, panner,
+        input, panner, analyser,
         volume: 1, pan: 0, muted: false, solo: false,
       };
     }
@@ -81,6 +84,21 @@ const USBEngine = (() => {
   function getMixer(padIndex, role) {
     const key = padIndex + ':' + role;
     return mixer[key] || { volume: 1, pan: 0, muted: false, solo: false };
+  }
+
+  // Nível de áudio (RMS 0..1) do canal do comando — para o VU meter.
+  const levelBuf = new Uint8Array(128);
+  function getMixerLevel(padIndex, role) {
+    const key = padIndex + ':' + role;
+    const ch = mixer[key];
+    if (!ch || !ch.analyser) return 0;
+    ch.analyser.getByteTimeDomainData(levelBuf);
+    let sum = 0;
+    for (let i = 0; i < levelBuf.length; i++) {
+      const v = (levelBuf[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.sqrt(sum / levelBuf.length);
   }
 
   function channelDestination(padIndex, role) {
@@ -415,7 +433,7 @@ const USBEngine = (() => {
   return {
     init, handle, activity, BUS_ROLES, WAVES,
     degreeToMidi, randomizeAll, nextPreset,
-    roleOctaves, setMixerVolume, setMixerPan, toggleMixerMute, toggleMixerSolo, getMixer,
+    roleOctaves, setMixerVolume, setMixerPan, toggleMixerMute, toggleMixerSolo, getMixer, getMixerLevel,
   };
 })();
 

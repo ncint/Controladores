@@ -181,9 +181,27 @@ select {
 .switch { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); cursor: pointer; }
 .switch input { accent-color: var(--ok); }
 
-.pad-mixer { display: flex; gap: 6px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
-.mixer-ctl { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--dim); }
-.mixer-ctl input[type="range"] { width: 70px; accent-color: var(--accent); }
+.pad-mixer { margin-top: 8px; }
+.mixer-strip { display: flex; gap: 8px; align-items: stretch; }
+.vu { display: flex; flex-direction: column-reverse; gap: 2px; justify-content: flex-end; }
+.vu-led {
+  width: 10px; height: 6px; border-radius: 2px;
+  background: #232741; border: 1px solid #2c314a;
+  transition: background 0.05s ease, box-shadow 0.05s ease;
+}
+.vu-led.on { background: var(--ok); border-color: var(--ok); box-shadow: 0 0 6px rgba(52, 211, 153, 0.5); }
+.vu-led.on.hot { background: var(--danger); border-color: var(--danger); box-shadow: 0 0 6px rgba(255, 84, 112, 0.5); }
+.vu-master { flex-direction: row; gap: 2px; align-items: center; }
+.vu-master .vu-led { width: 6px; height: 10px; }
+.fader-wrap { display: flex; align-items: center; height: 110px; }
+.fader {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 28px; height: 104px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.mixer-btns { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
 .mixer-btn {
   width: 26px; height: 24px; border-radius: 6px;
   background: var(--panel); color: var(--dim);
@@ -191,6 +209,11 @@ select {
 }
 .mixer-btn.on-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
 .mixer-btn.on-accent { background: var(--accent); color: #10121a; border-color: var(--accent); }
+.pan-wrap { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+.pan-label { font-size: 10px; color: var(--dim); }
+.pan { width: 90px; accent-color: var(--accent2); }
+.pan-center { font-size: 9px; color: #3a3f58; cursor: pointer; }
+.pan-center.lit { color: var(--accent); text-shadow: 0 0 6px rgba(110, 231, 255, 0.7); }
 .pad-sounds { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 8px; }
 .sound-btn {
   text-align: left;

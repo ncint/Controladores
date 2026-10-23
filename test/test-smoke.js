@@ -19,6 +19,10 @@ class FakeWaveShaper extends FakeNode { constructor(ctx){ super(ctx); this.curve
 class FakeConvolver extends FakeNode { constructor(ctx){ super(ctx); this.buffer=null; } }
 class FakeCompressor extends FakeNode { constructor(ctx){ super(ctx); } }
 class FakeStereoPanner extends FakeNode { constructor(ctx){ super(ctx); this.pan = new FakeParam(0); } }
+class FakeAnalyser extends FakeNode {
+  constructor(ctx){ super(ctx); this.fftSize = 256; }
+  getByteTimeDomainData(arr){ for (let i = 0; i < arr.length; i++) arr[i] = 128 + Math.round((Math.random()*2-1)*80); }
+}
 class FakeBuffer { constructor(len, rate){ this.length=len; this.sampleRate=rate; this.numberOfChannels=2; } getChannelData(){ return new Float32Array(this.length); } }
 class FakeAudioContext {
   constructor(){ this.state='running'; this.currentTime=0; this.sampleRate=44100; this.destination=new FakeNode(this); }
@@ -31,6 +35,7 @@ class FakeAudioContext {
   createConvolver(){ return new FakeConvolver(this); }
   createDynamicsCompressor(){ return new FakeCompressor(this); }
   createStereoPanner(){ return new FakeStereoPanner(this); }
+  createAnalyser(){ return new FakeAnalyser(this); }
   decodeAudioData(b){ return Promise.resolve({ duration: 0.5, numberOfChannels: 1, getChannelData: () => new Float32Array(100) }); }
   createBuffer(ch, len, rate){ return new FakeBuffer(len, rate); }
 }
@@ -115,6 +120,12 @@ window.fetch = () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new Ar
   window.USBEngine.setMixerVolume(2, 'chords', 1);
   assert(window.USBEngine.getMixer(2, 'chords').volume === 1, 'volume canal 2 aplicado');
   window.USBEngine.toggleMixerSolo(1, 'bass');
+  // VU meters: master com 12 LEDs, nível acessível
+  const masterVu = window.document.querySelector('#vu-master');
+  assert(masterVu !== null, 'VU master presente na barra do topo');
+  assert(masterVu.querySelectorAll('.vu-led').length === 12, 'VU master tem 12 LEDs');
+  assert(typeof window.USBSynth.getMasterLevel() === 'number', 'nível master acessível (getMasterLevel)');
+  assert(typeof window.USBEngine.getMixerLevel(0, 'lead') === 'number', 'nível do canal acessível (getMixerLevel)');
   // Aplicar som muda o bus
   window.USBPresets.applySound('bass', 'Baixo Moog');
   assert(window.USBSynth.getBus('bass').cfg.wave === 'sawtooth', 'som "Baixo Moog" aplica onda sawtooth ao bus bass');

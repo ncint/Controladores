@@ -99,10 +99,24 @@
         </div>
         <div class="pad-meta">${p.buttonCount} botões · ${p.axisCount} eixos${p.mapping ? ' · ' + p.mapping : ''}${profileLabel ? ' · ' + profileLabel : ''}</div>
         <div class="pad-mixer" id="pad-mixer-${p.index}">
-          <label class="mixer-ctl">Vol <input id="mix-vol-${p.index}" type="range" min="0" max="150" value="${Math.round(USBEngine.getMixer(p.index, role).volume * 100)}"></label>
-          <label class="mixer-ctl">Pan <input id="mix-pan-${p.index}" type="range" min="-100" max="100" value="${Math.round(USBEngine.getMixer(p.index, role).pan * 100)}"></label>
-          <button class="mixer-btn${USBEngine.getMixer(p.index, role).muted ? ' on-danger' : ''}" id="mix-mute-${p.index}">M</button>
-          <button class="mixer-btn${USBEngine.getMixer(p.index, role).solo ? ' on-accent' : ''}" id="mix-solo-${p.index}">S</button>
+          <div class="mixer-strip">
+            <div class="vu" id="vu-${p.index}">
+              ${Array.from({length: 8}, (_, i) => `<div class="vu-led" data-i="${i}"></div>`).join('')}
+            </div>
+            <div class="fader-wrap">
+              <input id="mix-vol-${p.index}" class="fader" type="range" min="0" max="150" value="${Math.round(USBEngine.getMixer(p.index, role).volume * 100)}" orient="vertical">
+            </div>
+            <div class="mixer-btns">
+              <button class="mixer-btn${USBEngine.getMixer(p.index, role).muted ? ' on-danger' : ''}" id="mix-mute-${p.index}" title="Mute">M</button>
+              <button class="mixer-btn${USBEngine.getMixer(p.index, role).solo ? ' on-accent' : ''}" id="mix-solo-${p.index}" title="Solo">S</button>
+            </div>
+          </div>
+          <div class="pan-wrap">
+            <span class="pan-label">L</span>
+            <input id="mix-pan-${p.index}" class="pan" type="range" min="-100" max="100" value="${Math.round(USBEngine.getMixer(p.index, role).pan * 100)}">
+            <span class="pan-center${Math.round(USBEngine.getMixer(p.index, role).pan * 100) === 0 ? ' lit' : ''}" id="pan-center-${p.index}">◆</span>
+            <span class="pan-label">R</span>
+          </div>
         </div>
         <div class="pad-sounds" id="pad-sounds-${p.index}">
           ${soundNames.map(name => `<button class="sound-btn${name === currentSound ? ' active' : ''}" data-sound="${name}">${name}</button>`).join('')}
@@ -122,7 +136,11 @@
       const muteBtn = div.querySelector(`#mix-mute-${p.index}`);
       const soloBtn = div.querySelector(`#mix-solo-${p.index}`);
       volEl.oninput = () => USBEngine.setMixerVolume(p.index, role, parseInt(volEl.value, 10) / 100);
-      panEl.oninput = () => USBEngine.setMixerPan(p.index, role, parseInt(panEl.value, 10) / 100);
+      panEl.oninput = () => {
+        USBEngine.setMixerPan(p.index, role, parseInt(panEl.value, 10) / 100);
+        const center = document.querySelector(`#pan-center-${p.index}`);
+        if (center) center.classList.toggle('lit', parseInt(panEl.value, 10) === 0);
+      };
       muteBtn.onclick = () => {
         const muted = USBEngine.toggleMixerMute(p.index, role);
         muteBtn.classList.toggle('on-danger', muted);
@@ -383,11 +401,35 @@
     if (cb) cb.checked = USBArpeggiator.isEnabled();
   }
 
+  function updateVUs() {
+    // VU master
+    const masterEl = $('#vu-master');
+    if (masterEl) {
+      const lvl = USBSynth.context() ? USBSynth.getMasterLevel() : 0;
+      const lit = Math.min(12, Math.round(lvl * 14));
+      masterEl.querySelectorAll('.vu-led').forEach((led, i) => led.classList.toggle('on', i < lit));
+    }
+    // VU por canal
+    USBGamepads.all().forEach(p => {
+      const el = $('#vu-' + p.index);
+      if (!el) return;
+      const cfg = USBMapping.getPadConfig(p.index);
+      const role = cfg ? cfg.role : 'lead';
+      const m = USBEngine.getMixer(p.index, role);
+      const anySolo = false;
+      let lvl = USBEngine.getMixerLevel(p.index, role);
+      if (m.muted) lvl = 0;
+      const lit = Math.min(8, Math.round(lvl * 10));
+      el.querySelectorAll('.vu-led').forEach((led, i) => led.classList.toggle('on', i < lit));
+    });
+  }
+
   function periodicRefresh() {
     setInterval(() => {
       if (USBGamepads.count() && $('#padsList').querySelector('.empty')) refreshPads();
       updateArpNotes();
     }, 500);
+    setInterval(updateVUs, 60);
   }
 
   const KB_KEYS = ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'w', 'e', 't', 'y', 'u'];
@@ -413,6 +455,12 @@
     flash('⚠ Erro: ' + e.message);
   });
 
+  const masterVu = $('#vu-master');
+  for (let i = 0; i < 12; i++) {
+    const led = document.createElement('div');
+    led.className = 'vu-led' + (i >= 10 ? ' hot' : '');
+    masterVu.appendChild(led);
+  }
   $('#masterVol').addEventListener('input', (e) => {
     if (USBSynth.context()) USBSynth.setMasterVolume(parseInt(e.target.value, 10) / 100);
   });
