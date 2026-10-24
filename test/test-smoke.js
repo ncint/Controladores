@@ -156,12 +156,25 @@ window.dispatchEvent(ev);
   pad.buttons[0].value = 0;
   await new Promise(r=>setTimeout(r,80));
   assert(true, 'botão de nota premido/solto processado sem erros');
-  // Botão 8 (panic no perfil genérico): sem erros
-  pad.buttons[8].value = 1;
+  // Voz drums: TODOS os botões/eixos são pads, mesmo sem binding
+  // Mudar a voz do comando 0 para drums
+  window.USBMapping.setBinding(0, null, null, null, 'drums');
+  pad.buttons[8].value = 1;   // botão sem binding de nota (era panic)
   await new Promise(r=>setTimeout(r,80));
   pad.buttons[8].value = 0;
   await new Promise(r=>setTimeout(r,60));
-  assert(true, 'botão de panic processado sem erros');
+  assert(true, 'na voz drums, botão sem binding processa sem erros');
+  pad.buttons[11].value = 1;  // botão 11: normalmente sem função
+  await new Promise(r=>setTimeout(r,80));
+  pad.buttons[11].value = 0;
+  await new Promise(r=>setTimeout(r,60));
+  assert(true, 'na voz drums, botão 11 processa sem erros');
+  pad.axes[2] = 0.9;          // eixo 2 (stick dir.): também dispara
+  await new Promise(r=>setTimeout(r,80));
+  pad.axes[2] = 0;
+  await new Promise(r=>setTimeout(r,60));
+  assert(true, 'na voz drums, eixo do stick direito dispara sem erros');
+  window.USBMapping.setBinding(0, null, null, null, 'lead');
   // Eixo 0 (stick esq.) = pitch bend: sem erros
   pad.axes[0] = 0.7;
   await new Promise(r=>setTimeout(r,80));

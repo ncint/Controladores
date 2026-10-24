@@ -131,7 +131,7 @@ const USBEngine = (() => {
   }
 
   // Na voz drums, cada grau do comando toca uma peça do kit.
-  const DRUM_DEGREES = ['kick','snare','hat','hatOpen','clap','tomLow','tomMid','tomHigh','rim','maraca','clapSnare','kickDriven','kick','snare','hat','hatOpen'];
+  const DRUM_PIECES = ['kick','snare','hat','hatOpen','clap','tomLow','tomMid','tomHigh','rim','maraca','clapSnare','kickDriven'];
 
   function isDrumRole(role) { return role === 'drums'; }
 
@@ -243,6 +243,37 @@ const USBEngine = (() => {
     });
   }
 
+  // Voz drums: TODOS os botões e eixos do comando são pads de percussão.
+  // Ignora os bindings melódicos — cada botão/eixo tem a sua peça, por ordem.
+  function handleDrums(change, padIndex) {
+    if (change.type === 'button') {
+      const pressed = change.value > 0.5 && change.prev <= 0.5;
+      if (pressed) {
+        const piece = DRUM_PIECES[change.index % DRUM_PIECES.length];
+        triggerDrumPiece(padIndex, 'drums', piece, change.value, change.index);
+      }
+      return true;
+    }
+    if (change.type === 'axis') {
+      // Cada eixo tem 2 peças: negativa (−1) e positiva (+1).
+      // Stick esq.: X−/X+ e Y−/Y+ (cursor da SNES), stick dir. se existir.
+      const TH = 0.6;
+      const pairIdx = Math.floor(change.index / 2);            // 0 = stick esq., 1 = stick dir.
+      const dir = change.value > TH ? 1 : (change.value < -TH ? -1 : 0);
+      const key = 'drumpad:' + padIndex + ':' + change.index;
+      const slot = pairIdx * 4 + (change.index % 2) * 2;      // peça base deste eixo
+      if (dir !== 0 && lastPadPress[key] !== dir) {
+        lastPadPress[key] = dir;
+        const piece = DRUM_PIECES[(slot + (dir > 0 ? 1 : 0)) % DRUM_PIECES.length];
+        triggerDrumPiece(padIndex, 'drums', piece, 0.9, change.index);
+      } else if (dir === 0) {
+        lastPadPress[key] = 0;
+      }
+      return true;
+    }
+    return false;
+  }
+
   function handle(change, seq, arp) {
     seq = seq || null; arp = arp || null;
     if (!started) init();
@@ -252,6 +283,9 @@ const USBEngine = (() => {
     const padCfg = USBMapping.getPadConfig(change.padIndex);
     if (!padCfg) return false;
     const role = padCfg.role;
+    if (isDrumRole(role)) {
+      return handleDrums(change, change.padIndex);
+    }
     const binding = padCfg.bindings.find(b => b.type === change.type && b.index === change.index);
     if (!binding) return false;
     const action = binding.action;
@@ -277,7 +311,7 @@ const USBEngine = (() => {
           const key = voiceKey(change.padIndex, role, 'ax' + change.index + (b.dir === -1 ? 'n' : 'p'));
           if (isDrumRole(role)) {
             if (want && !heldVoices[key]) {
-              const piece = DRUM_DEGREES[(b.param || 0) % DRUM_DEGREES.length];
+              const piece = DRUM_PIECES[(b.param || 0) % DRUM_PIECES.length];
               triggerDrumPiece(change.padIndex, role, piece, 0.9);
               heldVoices[key] = { stop() { this.done = true; } };
             } else if (!want && heldVoices[key] && heldVoices[key].done !== undefined) {
@@ -321,12 +355,12 @@ const USBEngine = (() => {
       } else if (isDrumRole(role)) {
         if (change.type === 'axis') {
           if (Math.abs(change.value) > 0.15) {
-            const piece = DRUM_DEGREES[degree % DRUM_DEGREES.length];
+            const piece = DRUM_PIECES[degree % DRUM_PIECES.length];
             triggerDrumPiece(change.padIndex, role, piece, Math.abs(change.value), change.index);
           }
         } else {
           if (change.value > 0.5 && change.prev <= 0.5) {
-            const piece = DRUM_DEGREES[degree % DRUM_DEGREES.length];
+            const piece = DRUM_PIECES[degree % DRUM_PIECES.length];
             triggerDrumPiece(change.padIndex, role, piece, change.value, change.index);
           }
         }
