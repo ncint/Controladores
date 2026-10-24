@@ -288,9 +288,28 @@
     });
   }
 
+  function updateDiagPads() {
+    const el = $('#diagPads');
+    if (!el) return;
+    const raw = navigator.getGamepads ? navigator.getGamepads() : [];
+    const lines = [];
+    let any = false;
+    for (const gp of raw) {
+      if (!gp) continue;
+      any = true;
+      lines.push(`#${gp.index}: ${gp.id} — ${gp.buttons.length} botões, ${gp.axes.length} eixos${gp.mapping ? ' (' + gp.mapping + ')' : ''}`);
+    }
+    if (!any) {
+      el.innerHTML = '<p class="hint">Nenhum dispositivo detetado pelo navegador. Prime um botão num comando ligado ou numa ponte virtual (ex.: WiimoteHook) para o acordar.</p>';
+    } else {
+      el.innerHTML = lines.map(l => `<p class="hint">${l}</p>`).join('');
+    }
+  }
+
   function periodicRefresh() {
     setInterval(() => {
       if (USBGamepads.count() && $('#padsList').querySelector('.empty')) refreshPads();
+      updateDiagPads();
     }, 500);
     setInterval(updateVUs, 60);
   }
