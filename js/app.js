@@ -52,7 +52,7 @@
       div.id = 'pad-card-' + p.index;
       const profileLabel = (p.profile && USBMapping.PROFILES[p.profile]) ? USBMapping.PROFILES[p.profile].label : null;
       const role = cfg ? cfg.role : 'lead';
-      const currentSound = currentSounds[role];
+      const currentSound = USBEngine.getChannelSoundName(p.index, role) || USBPresets.soundNames(role)[0];
       const soundNames = USBPresets.soundNames(role);
       div.innerHTML = `
         <div class="pad-title"><span class="pad-dot" id="pad-dot-${p.index}"></span>Comando ${p.index + 1}</div>
@@ -125,10 +125,9 @@
       };
       div.querySelectorAll('.sound-btn').forEach(btn => {
         btn.onclick = () => {
-          currentSounds[role] = btn.dataset.sound;
-          USBPresets.applySound(role, btn.dataset.sound);
+          USBEngine.setChannelSound(p.index, role, btn.dataset.sound);
           refreshPads();
-          flash('Voz ' + role + ': ' + btn.dataset.sound);
+          flash('Comando ' + (p.index + 1) + ': ' + btn.dataset.sound);
         };
       });
       list.appendChild(div);
@@ -158,7 +157,6 @@
     }, 2500);
   }
 
-  const currentSounds = {};
 
   function buildMappingUI() {
     const box = $('#mappingUI');

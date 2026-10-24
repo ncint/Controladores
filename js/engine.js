@@ -15,6 +15,8 @@ const USBEngine = (() => {
 
   // Mesa de mistura por comando: volume, pan, mute, solo.
   const mixer = {};
+  // Som por comando: cada carta escolhe o seu próprio instrumento.
+  const channelSounds = {};
 
   function ensureChannel(padIndex, role) {
     const key = padIndex + ':' + role;
@@ -22,7 +24,7 @@ const USBEngine = (() => {
       const ctx = USBSynth.context();
       const input = ctx.createGain();
       const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-      const bus = USBSynth.getBus(role);
+      const bus = getChannelInstrument(padIndex, role);
       const dest = bus ? bus.input : ctx.destination;
       if (panner) {
         input.connect(panner);
@@ -40,6 +42,33 @@ const USBEngine = (() => {
       };
     }
     return mixer[key];
+  }
+
+  function getChannelInstrument(padIndex, role) {
+    const cfg = channelSounds[padIndex] || USBPresets.SOUNDS[role] && USBPresets.SOUNDS[role][Object.keys(USBPresets.SOUNDS[role])[0]];
+    if (!cfg) return USBSynth.getBus(role);
+    return USBSynth.applyChannelSound(padIndex, cfg);
+  }
+
+  function setChannelSound(padIndex, role, soundName) {
+    const voiceSounds = USBPresets.SOUNDS[role] || USBPresets.SOUNDS.lead;
+    const cfg = voiceSounds[soundName] || Object.values(voiceSounds)[0];
+    if (!cfg) return null;
+    channelSounds[padIndex] = cfg;
+    return USBSynth.applyChannelSound(padIndex, cfg);
+  }
+
+  function getChannelSoundName(padIndex, role) {
+    const cfg = channelSounds[padIndex];
+    if (!cfg) {
+      const names = USBPresets.soundNames(role);
+      return names[0] || null;
+    }
+    const names = USBPresets.soundNames(role);
+    for (const n of names) {
+      if (USBPresets.SOUNDS[role][n] === cfg) return n;
+    }
+    return null;
   }
 
   function applyMixerToChannel(ch) {
@@ -155,7 +184,7 @@ const USBEngine = (() => {
   }
 
   function startVoice(padIndex, role, controlIndex, midi, velocity) {
-    const bus = USBSynth.getBus(role);
+    const bus = getChannelInstrument(padIndex, role);
     if (!bus) return null;
     const key = voiceKey(padIndex, role, controlIndex);
     const existing = heldVoices[key];
@@ -179,7 +208,8 @@ const USBEngine = (() => {
   }
 
   function startVoiceByKey(key, role, midi, velocity) {
-    const bus = USBSynth.getBus(role);
+    const padIdx = key.split(':')[0];
+    const bus = getChannelInstrument(padIdx, role);
     if (!bus) return null;
     const existing = heldVoices[key];
     if (existing) { existing.stop(); delete heldVoices[key]; }
@@ -454,6 +484,7 @@ const USBEngine = (() => {
     init, handle, activity, BUS_ROLES, WAVES,
     degreeToMidi, randomizeAll,
     roleOctaves, setMixerVolume, setMixerPan, toggleMixerMute, toggleMixerSolo, getMixer, getMixerLevel,
+    setChannelSound, getChannelSoundName,
   };
 })();
 

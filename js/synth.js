@@ -566,6 +566,37 @@ const USBSynth = (() => {
   }
 
   function getBus(name) { return buses[name]; }
+
+  // Buses de canal (por comando): som independente por comando.
+  function channelBusName(padIndex) { return 'ch' + padIndex; }
+
+  function ensureChannelBus(padIndex, cfg) {
+    const name = channelBusName(padIndex);
+    if (!buses[name]) {
+      buses[name] = makeBus(name, cfg);
+    }
+    return buses[name];
+  }
+
+  function applyChannelSound(padIndex, cfg) {
+    const name = channelBusName(padIndex);
+    if (!buses[name]) return ensureChannelBus(padIndex, cfg);
+    applyParams(buses[name], cfg);
+    return buses[name];
+  }
+
+  function removeChannelBus(padIndex) {
+    const name = channelBusName(padIndex);
+    const b = buses[name];
+    if (!b) return;
+    b.voices.forEach(v => { try { v.stop(); } catch (e) {} });
+    try { b.input.disconnect(); } catch (e) {}
+    try { b.shaper.disconnect(); } catch (e) {}
+    try { b.filter.disconnect(); } catch (e) {}
+    try { b.chorus.output.disconnect(); } catch (e) {}
+    try { b.vol.disconnect(); } catch (e) {}
+    delete buses[name];
+  }
   function allBuses() { return buses; }
   function context() { return ctx; }
   function masterNode() { return master; }
@@ -592,6 +623,7 @@ const USBSynth = (() => {
     applyParams, noteToFreq, panic, context, masterNode,
     setDrumKit, getDrumKit, setMasterVolume, getMasterVolume, getMasterLevel,
     preloadKit, kitPiecesLoaded,
+    ensureChannelBus, applyChannelSound, removeChannelBus, channelBusName,
   };
 })();
 
