@@ -4,7 +4,7 @@ const USBGamepads = (() => {
   let scanTimer = null;
   let prevSnapshot = {};
 
-  const MAX_PADS = 4;
+  const MAX_PADS = 8;
 
   function on(event, cb) {
     if (listeners[event]) listeners[event].push(cb);
